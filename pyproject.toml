@@ -1,0 +1,27 @@
+[project]
+name = "auth"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "aioboto3>=14.1.0",
+    "alembic>=1.15.1",
+    "fastapi[standard]>=0.115.11",
+    "greenlet>=3.1.1",
+    "psycopg>=3.2.5",
+    "psycopg-binary>=3.2.6",
+    "pydantic>=2.10.6",
+    "pydantic-settings>=2.8.1",
+    "sqlalchemy>=2.0.38",
+    "structlog>=25.2.0",
+    "uvicorn>=0.34.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.5",
+    "pytest-asyncio>=0.26.0",
+    "pytest-mock>=3.14.0",
+    "ruff>=0.9.10",
+]
