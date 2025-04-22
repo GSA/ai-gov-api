@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock
 
 from fastapi import HTTPException, status
 from app.auth.dependencies import valid_api_key
-from app.schema.api_key import APIKeyOut
+from app.auth.schemas import APIKeyOut
 
 
 
@@ -19,14 +19,15 @@ def api_key():
     # the unit under test does not validate the api key
     # but we'll use it to make sure it's passing to the 
     # repository correctly
-    return str(uuid.uuid4())
+    return "testing_abc123"
 
 @pytest.fixture(scope="module") 
 def good_api_key():
     now = datetime.now()
     return APIKeyOut(
         id=1,
-        key_value=str(uuid.uuid4()),
+        hashed_key="xyzabc",
+        key_prefix="testing",
         manager_id=str(uuid.uuid4()),
         is_active=True,
         created_at=now,
@@ -39,7 +40,8 @@ def inactive_api_key():
     now = datetime.now()
     return APIKeyOut(
         id=1,
-        key_value=str(uuid.uuid4()),
+        hashed_key="xyzabc",
+        key_prefix="testing",
         manager_id=str(uuid.uuid4()),
         is_active=False,
         created_at=now,
@@ -53,7 +55,8 @@ def expired_api_key():
 
     return APIKeyOut(
         id=1,
-        key_value=str(uuid.uuid4()),
+        hashed_key="xyzabc",
+        key_prefix="testing",
         expires_at=a_few_minutes_ago,
         manager_id=str(uuid.uuid4()),
         is_active=True,
@@ -69,7 +72,8 @@ def non_expired_api_key():
 
     return APIKeyOut(
         id=1,
-        key_value=str(uuid.uuid4()),
+        hashed_key="xyzabc",
+        key_prefix="testing",
         expires_at=a_few_minutes_ago,
         manager_id=str(uuid.uuid4()),
         is_active=True,

@@ -4,7 +4,7 @@ from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 from alembic import context
 
-from app.entities import Base
+from app.db.models import Base
 from app.config.settings import settings
 
 db_uri = str(settings.postgres_connection)

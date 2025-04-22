@@ -13,7 +13,12 @@ from app.routers import api_v1
 from app.db.session import engine
 from app.services.billing import billing_worker, drain_billing_queue
 
-#from app.schema.token import TokenCreate
+
+# this is only here until we actually use the users model
+# somewhere other than a relationship. SqlAlchemy has trouble
+# building forward references when the model has not actuall be imported into the code
+from app.users.models import User # noqa 401 
+
 # Disabled becuase we capture this infor with middleware
 logging.getLogger("uvicorn.access").disabled = True
 logging.getLogger("uvicorn").disabled = True
@@ -65,6 +70,7 @@ async def json_500_handler(request: Request, exc: Exception):
             "request_id": request_id_ctx.get(),
         }
     )
+
 
 app.include_router(
     api_v1.router,

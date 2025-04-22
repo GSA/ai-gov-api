@@ -1,22 +1,21 @@
 import asyncio
 
-from app.schema.user import UserCreate
-from app.schema.api_key import APIKeyCreate
-from app.repositories.users import UserRepository
-from app.repositories.api_keys import APIKeyRepository
-from app.auth.scopes import Scope
+from app.auth.schemas import APIKeyCreate, Scope
+from app.auth.api_key_services import generate_api_key
+from app.users.schemas import UserCreate
+from app.users.repositories import UserRepository
+from app.auth.repositories import APIKeyRepository
 from app.db.session import async_session
 
 
 roles = ['admin', 'api_manager', 'user']
 permissions = ['model:inference', 'model:embeddings']
-
+key, key_hash = generate_api_key("testing", 10)
 users = [
     {
-        "email": "mark.meyer@gsa.gov",
-        "name": "Mark",
+        "email": "test3_user@gsa.gov",
+        "name": "Buck",
         "role": "admin",
-        "api_key_values":"60d3b81a-4dac-4330-a908-22c693bc9845"
     }
 ]
 
@@ -28,13 +27,15 @@ async def insert(users):
             new_user = await UserRepository(session).create(user_schema)
         async with async_session() as session:
             token = APIKeyCreate(
-                key_value=user['api_key_values'],
+                hashed_key=key_hash,
+                key_prefix="testing",
                 manager_id=new_user.id,
-                scopes=[Scope.MODELS_CLAUDE_3_5_INFERENCE]
+                scopes=[Scope.MODELS_INFERENCE, Scope.MODELS_EMBEDDING]
             )
 
-            new_token = await APIKeyRepository(session).create(token)
-        print("inserted:", new_user, new_token)
+            await APIKeyRepository(session).create(token)
+
+        print("api_key: remeber this, it can't be recovered:", key)
 
 
 if __name__ == "__main__":

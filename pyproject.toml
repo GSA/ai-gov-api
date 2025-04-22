@@ -25,3 +25,5 @@ dev = [
     "pytest-mock>=3.14.0",
     "ruff>=0.9.10",
 ]
+[tool.pytest.ini_options]
+asyncio_default_fixture_loop_scope = "function"

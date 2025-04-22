@@ -1,8 +1,8 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.entities.user import User
-from app.schema.user import UserCreate
+from app.users.models import User
+from app.users.schemas import UserCreate
 
 class UserRepository:
     def __init__(self, session: AsyncSession) -> None:

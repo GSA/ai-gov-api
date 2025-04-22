@@ -1,7 +1,7 @@
 from pydantic import BaseModel, ConfigDict, UUID4, EmailStr
 from datetime import datetime
 
-from app.auth.roles import Role
+from app.auth.schemas import Role
 
 class UserBase(BaseModel):
     model_config = ConfigDict(from_attributes=True)

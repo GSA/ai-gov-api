@@ -3,9 +3,8 @@ import uuid
 import pytest
 
 from fastapi import HTTPException, status
-from app.auth.scopes import Scope
+from app.auth.schemas import APIKeyOut, Scope
 from app.auth.dependencies import RequiresScope
-from app.schema.api_key import APIKeyOut
 
 
 
@@ -27,7 +26,8 @@ def test_required_scopes(key_scopes, required_scopes, is_valid):
 
     api_key = APIKeyOut(
         id=1,
-        key_value=str(uuid.uuid4()),
+        hashed_key="abc123",
+        key_prefix="testing",
         manager_id=str(uuid.uuid4()),
         scopes=key_scopes,
         is_active=True,
