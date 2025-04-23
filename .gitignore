@@ -11,3 +11,6 @@ wheels/
 
 # Environment
 .env
+
+# notebook checkpoints
+.ipynb_checkpoints
