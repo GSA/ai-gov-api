@@ -10,6 +10,10 @@ This schema expresses this API as Pydantic classes and should be considered the 
 of which parts of the Chap Completion API we support. 
 
 Other backends will depend on this schema to convert to other backend formats.
+
+We probably won't be able to use the Chat Completion API as it since it offers features that are not 
+part of other provider APIs. For example, OpenAI has an `n` parameter to generate n completions. This
+is not supported by Bedrock's Converse API.
 """
 
 
@@ -41,13 +45,12 @@ ContentPart = Union[TextContentPart, ImageContentPart]
 
 class ChatCompletionMessage(BaseModel):
     model_config = ConfigDict(extra="ignore")
-    role: Literal["user", "assistant","system", "function", "tool"]
+    role: Literal["user", "assistant", "system"]  # for now exclude "function", "tool"
     content: Union[str, List[ContentPart], None] = Field(description="The content of the message. Can be a string, a list of content parts (for multimodal input), or None (this is intended for tool calls).")
     name: Optional[str] = None
 
 
 class ChatCompletionRequest(BaseModel):
-    #model_config = ConfigDict(extra="ignore") 
     model: str = Field(..., description="The model to use for chat completion")
     messages: List[ChatCompletionMessage] = Field(..., description="A list of messages from the conversation so far")
    

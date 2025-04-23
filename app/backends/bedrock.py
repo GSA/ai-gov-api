@@ -183,6 +183,11 @@ class ImagePayload(BaseModel):
 class ContentImageBlock(BaseModel):
     image: ImagePayload
 
+class SystemContentBlock(BaseModel):
+    # Bedrock allows other fields here that we're ignoring for now
+    # https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_SystemContentBlock.html
+    text: str
+
 class ContentTextBlock(BaseModel):
     text: str
 
@@ -211,10 +216,10 @@ class InferenceConfig(BaseModel):
         populate_by_name=True,
         alias_generator=to_camel
     )
-    max_tokens: Optional[int] = Field(None, description="Maximum number of tokens to generate")
-    temperature: Optional[float] = Field(None, ge=0, le=1, description="Sampling temperature")
-    top_p: Optional[float] = Field(None, ge=0, le=1, description="Top-p sampling")
-    stop_sequences: Optional[List[str]] = Field(None, description="Optional list of stop sequences")
+    max_tokens: Optional[int] = Field(default=None, description="Maximum number of tokens to generate")
+    temperature: Optional[float] = Field(default=None, ge=0, le=1, description="Sampling temperature")
+    top_p: Optional[float] = Field(default=None, ge=0, le=1, description="Top-p sampling")
+    stop_sequences: Optional[List[str]] = Field(default=None, description="Optional list of stop sequences")
 
 class ConverseRequest(BaseModel):
     model_config = ConfigDict(
@@ -224,7 +229,8 @@ class ConverseRequest(BaseModel):
     )
     model_id: str = Field(..., exclude=True)
     messages: List[Message]
-    inference_config: Optional[InferenceConfig] = Field(None, serialization_alias="inferenceConfig")
+    system: Optional[List[SystemContentBlock]] = Field(default=None, description="Optional list of system prompts")
+    inference_config: Optional[InferenceConfig] = Field(default=None, serialization_alias="inferenceConfig")
 
 class ConverseResponseUsage(BaseModel):
     inputTokens: NonNegativeInt
@@ -252,13 +258,15 @@ def convert_open_ai_stop(stop: Optional[Union[str, list[str]]] = None) -> Option
         return [stop]
     return stop
 
-def convert_open_ai_messages(messages: list[ChatCompletionMessage]) -> List[Message]:
+def convert_open_ai_messages(messages: list[ChatCompletionMessage]) -> tuple[List[Message], Optional[List[SystemContentBlock]]]:
     """Converts OpenAI messages to Bedrock Converse API messages, handling multimodal content."""
     bedrock_messages = []
+    bedrock_system_message: List[SystemContentBlock] | None = []
     for openai_msg in messages:
-
         if openai_msg.role == "system":
-            log.warning("Warning: Skipping system message during conversion as Bedrock Converse API handles system prompts differently or not at all within 'messages'.")
+            # collect system messages which live at a level higher in bedrock
+            if isinstance(openai_msg.content, str):
+                bedrock_system_message.append(SystemContentBlock(text=openai_msg.content))
             continue
 
         bedrock_content_blocks: List[ContentBlock] = []
@@ -297,10 +305,12 @@ def convert_open_ai_messages(messages: list[ChatCompletionMessage]) -> List[Mess
                         log.warn(f"Warning: Skipping image with HTTPS URL ({part.image_url.url[:50]}...). Conversion only supports Base64 data URIs.")
        
         if bedrock_content_blocks:
-             # Ensure role is valid for Bedrock Message
-             # this ignores OpenAI's other roles, not sure it this is the way
+            # Ensure role is valid for Bedrock Message
+            # OpenAI allows other roles,but we left them off the OpenAI models
+            # so this probably not needed at the moment.
             format_annotation = Message.model_fields['role'].annotation
-            bedrock_roles = get_args(format_annotation) 
+            bedrock_roles = get_args(format_annotation)
+
             if openai_msg.role not in bedrock_roles:
                  log.warning(f"Skipping message with unsupported role '{openai_msg.role}' for Bedrock Converse.")
                  continue
@@ -310,13 +320,16 @@ def convert_open_ai_messages(messages: list[ChatCompletionMessage]) -> List[Mess
             bedrock_messages.append(bedrock_msg)
         elif openai_msg.role == 'user': 
             log.wanring("Warning: Skipping empty user message after conversion.")
-
-    return bedrock_messages
+    
+    if not bedrock_system_message:
+        bedrock_system_message = None
+        
+    return bedrock_messages, bedrock_system_message
 
 def convert_open_ai_completion_bedrock(chat_completion: ChatCompletionRequest) -> ConverseRequest:
     """Converts an OpenAI ChatCompletionRequest to an AWS Bedrock ConverseRequest."""
     
-    bedrock_messages = convert_open_ai_messages(chat_completion.messages)
+    bedrock_messages, bedrock_system_message = convert_open_ai_messages(chat_completion.messages)
     # Handle cases where messages might become empty after conversion (e.g., only system messages)
     if not bedrock_messages:
         raise ValueError("Cannot create Bedrock Converse request: No valid user/assistant messages found after conversion.")
@@ -337,6 +350,7 @@ def convert_open_ai_completion_bedrock(chat_completion: ChatCompletionRequest) -
     return ConverseRequest (
         model_id=chat_completion.model, # Note: Bedrock uses specific model IDs like 'anthropic.claude-3-sonnet-20240229-v1:0'
         messages=bedrock_messages,
+        system=bedrock_system_message,
         inference_config=inference_conf # Use snake_case here, Pydantic alias handles JSON output
     )
 

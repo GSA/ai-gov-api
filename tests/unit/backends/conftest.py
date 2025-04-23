@@ -20,6 +20,21 @@ def open_ai_example():
         max_tokens=300
 )
 
+
+@pytest.fixture(scope="module") 
+def open_ai_example_with_system():
+    return ChatCompletionRequest(
+        model="claude_3_5_sonnet",
+        messages=[
+            ChatCompletionMessage(role="system", content="You speak only Pirate!"),
+            ChatCompletionMessage(role="user", content="Hello!"),
+            ChatCompletionMessage(role="system", content="You no longer speak only Pirate."),
+
+        ],
+        temperature=0,
+        max_tokens=300
+)
+
 @pytest.fixture(scope="module") 
 def bedrock_example():
     return ConverseRequest(
