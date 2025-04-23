@@ -1,7 +1,7 @@
 import asyncio
 
 from app.auth.schemas import APIKeyCreate, Scope
-from app.auth.api_key_services import generate_api_key
+from app.auth.utils import generate_api_key
 from app.users.schemas import UserCreate
 from app.users.repositories import UserRepository
 from app.auth.repositories import APIKeyRepository
