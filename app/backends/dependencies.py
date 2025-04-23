@@ -16,7 +16,6 @@ class Backend:
         if not backend:
             raise HTTPException(status_code=422, detail=f"Model '{model_id}' is not supported by this API.",)
         elif capability != self.capability:
-            raise HTTPException(status_code=422, detail=f"This endpoint does support chat with the model '{model_id}'.",)
+            raise HTTPException(status_code=422, detail=f"This endpoint does support {capability} with the model '{model_id}'.",)
 
         return backend
-

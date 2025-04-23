@@ -19,11 +19,12 @@ async_session = async_sessionmaker(
 
 # Dependency for FastAPI injection that handles session lifecyle
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
-    try:
-        async with async_session(expire_on_commit=False) as session:
+    
+    async with async_session(expire_on_commit=False) as session:
+        try:
             yield session
-    except:
-        await session.rollback()
-        raise
-    finally:
-        await session.close()
+        except:
+            await session.rollback()
+            raise
+        finally:
+            await session.close()

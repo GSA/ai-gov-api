@@ -15,6 +15,7 @@ dependencies = [
     "pydantic-settings>=2.8.1",
     "sqlalchemy>=2.0.38",
     "structlog>=25.2.0",
+    "types-aioboto3>=14.1.0",
     "uvicorn>=0.34.0",
 ]
 

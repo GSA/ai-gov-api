@@ -1,5 +1,6 @@
 import logging
 import sys
+from typing import Optional
 
 import structlog
 from structlog.contextvars import  merge_contextvars
@@ -45,7 +46,7 @@ def setup_structlog():
     )
     
 
-def get_logger(name: str = None):
+def get_logger(name: Optional[str] = None):
     """This just adds an abstraction layer to make it easier to swap later if needed"""
     return structlog.get_logger(name)
 

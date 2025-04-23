@@ -15,7 +15,7 @@ class UserRepository:
         await self.session.refresh(new_user)
         return new_user
 
-    async def get(self, user_id: str) -> User:
+    async def get(self, user_id: str) -> User | None:
         async with self.session.begin():
             result = await self.session.execute(
                 select(User).where(User.id==user_id)

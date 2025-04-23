@@ -1,4 +1,5 @@
 import base64
+import binascii
 from typing import Dict, Any
 import re
 
@@ -13,7 +14,7 @@ def parse_data_uri(uri: str) -> Dict[str, Any]:
     
     try:
         decoded_bytes = base64.b64decode(base64_data)
-    except base64.binascii.Error as e:
+    except binascii.Error as e:
         raise ValueError(f"Invalid Base64 data: {e}") from e
 
     return {"format": img_format, "data": decoded_bytes}

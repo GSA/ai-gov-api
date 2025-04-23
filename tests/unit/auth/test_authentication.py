@@ -28,10 +28,9 @@ def good_api_key():
         id=1,
         hashed_key="xyzabc",
         key_prefix="testing",
-        manager_id=str(uuid.uuid4()),
+        manager_id=uuid.uuid4(),
         is_active=True,
         created_at=now,
-        updated_at=now
     )
 
 
@@ -42,10 +41,9 @@ def inactive_api_key():
         id=1,
         hashed_key="xyzabc",
         key_prefix="testing",
-        manager_id=str(uuid.uuid4()),
+        manager_id=uuid.uuid4(),
         is_active=False,
         created_at=now,
-        updated_at=now
     )
 
 @pytest.fixture(scope="module") 
@@ -58,10 +56,9 @@ def expired_api_key():
         hashed_key="xyzabc",
         key_prefix="testing",
         expires_at=a_few_minutes_ago,
-        manager_id=str(uuid.uuid4()),
+        manager_id=uuid.uuid4(),
         is_active=True,
         created_at=now,
-        updated_at=now
     )
 
 
@@ -75,10 +72,9 @@ def non_expired_api_key():
         hashed_key="xyzabc",
         key_prefix="testing",
         expires_at=a_few_minutes_ago,
-        manager_id=str(uuid.uuid4()),
+        manager_id=uuid.uuid4(),
         is_active=True,
         created_at=now,
-        updated_at=now
     )
 
 

@@ -7,11 +7,10 @@ import structlog
 from app.db.session import get_db_session
 from app.auth.schemas import APIKeyOut, Scope
 from app.auth.repositories import APIKeyRepository
-from pydantic import UUID4
 
 logger = structlog.get_logger()
 
-api_key_header:UUID4 = APIKeyHeader(name="X-API-Key")
+api_key_header = APIKeyHeader(name="X-API-Key")
 
 
 async def valid_api_key(

@@ -18,10 +18,10 @@ It has thee part:
 from datetime import datetime
 import json
 import structlog
-from typing import Optional, Union, List, Literal
+from typing import Optional, Union, List, Literal, get_args, cast
 
 import aioboto3
-from botocore.config import Config
+from aiobotocore.config import AioConfig
 
 from pydantic import BaseModel, Field, NonNegativeInt, model_validator, ValidationError, ConfigDict
 from pydantic.alias_generators import to_camel
@@ -91,8 +91,8 @@ class BedrockModelsSettings(BaseSettings):
 class BedRockBackend(BackendBase):
     class Settings(BaseSettings):
         model_config = SettingsConfigDict(env_file='.env',extra='ignore', env_file_encoding='utf-8', env_nested_delimiter="__" )
-        bedrock_assume_role: str
-        aws_default_region: str
+        bedrock_assume_role: str = Field(default=...)
+        aws_default_region: str = Field(default=...)
         bedrock_models: BedrockModelsSettings = BedrockModelsSettings()
         
         @model_validator(mode="after")
@@ -112,11 +112,10 @@ class BedRockBackend(BackendBase):
     
     def __init__(self):
         self.settings = self.Settings()
-        self.retry_config = Config(
+        self.retry_config = AioConfig(
             retries={"max_attempts": 5, "mode": "standard",},
             region_name=self.settings.aws_default_region
         )
-        self.settings = self.Settings()
 
 
     @property
@@ -124,16 +123,16 @@ class BedRockBackend(BackendBase):
         return [LLMModel(**v) for v in self.settings.bedrock_models.model_dump().values()]
 
 
-    async def invoke_model(self, req: ChatCompletionRequest):
-        payload = convert_open_ai_completion_bedrock(req)
+    async def invoke_model(self, payload: ChatCompletionRequest):
+        converted = convert_open_ai_completion_bedrock(payload)
         session = aioboto3.Session()
         async with session.client("bedrock-runtime", config=self.retry_config) as client:
-            body = payload.dict(exclude_none=True, by_alias=True)
-            arn = getattr(self.settings.bedrock_models, payload.model_id).arn
+            body = converted.model_dump(exclude_none=True, by_alias=True)
+            arn = getattr(self.settings.bedrock_models, converted.model_id).arn
             
             body['modelId'] = arn
             response = await client.converse(**body)
-            log.info("bedrock metrics", model=payload.model_id, **response['metrics'])
+            log.info("bedrock metrics", model=converted.model_id, **response['metrics'])
         
             res = ConverseResponse(**response)
             return convert_bedrock_response_open_ai(res)
@@ -200,9 +199,11 @@ class ContentDocumentBlock(BaseModel):
 
 ContentBlock = Union[ContentTextBlock, ContentImageBlock, ContentDocumentBlock]
 
+# it's not clear how to deal with OpenAI's other possible roles
+BedrockMessageRole = Literal["user", "assistant"]
 
 class Message(BaseModel):
-    role: Literal["user", "assistant"]
+    role: BedrockMessageRole
     content: List[ContentBlock]
 
 class InferenceConfig(BaseModel):
@@ -277,35 +278,38 @@ def convert_open_ai_messages(messages: list[ChatCompletionMessage]) -> List[Mess
                         try:
                             image_data = parse_data_uri(part.image_url.url)
                             # Validate format against Bedrock's Literal
-                            if image_data["format"] not in ImagePayload.model_fields['format'].annotation.__args__:
+                            format_annotation = ImagePayload.model_fields['format'].annotation
+                            allowed_formats = get_args(format_annotation) 
+
+                            if image_data["format"] not in allowed_formats:
                                 log.warning(f"Skipping image with unsupported format '{image_data['format']}'. Supported: jpeg, png, gif, webp.")
                                 continue
-                            source = ImageSource(data=image_data["data"])
+                            source = ImageSource(bytes=image_data["data"])
                             payload = ImagePayload(format=image_data["format"], source=source)
                             bedrock_content_blocks.append(ContentImageBlock(image=payload))
-                        except ValueError as e:
-                            log.warning(f"Skipping image due to parsing error: {e}")
                         except ValidationError as e:
                              log.warning(f"skipping image due to validation error: {e}")
+                        except ValueError as e:
+                            log.warning(f"Skipping image due to parsing error: {e}")
 
                     else:
                         # Let's not fetch images from the internet right now.
                         log.warn(f"Warning: Skipping image with HTTPS URL ({part.image_url.url[:50]}...). Conversion only supports Base64 data URIs.")
-        elif openai_msg.content is None and openai_msg.role == "assistant" and openai_msg.tool_calls:
-             # If we get to tools, we'll do that here
-             log.warning(" Skipping assistant message with only tool_calls. Bedrock Converse tool handling requires a different structure.")
-             continue 
-
+       
         if bedrock_content_blocks:
              # Ensure role is valid for Bedrock Message
-             if openai_msg.role not in Message.model_fields['role'].annotation.__args__:
+             # this ignores OpenAI's other roles, not sure it this is the way
+            format_annotation = Message.model_fields['role'].annotation
+            bedrock_roles = get_args(format_annotation) 
+            if openai_msg.role not in bedrock_roles:
                  log.warning(f"Skipping message with unsupported role '{openai_msg.role}' for Bedrock Converse.")
                  continue
-             
-             bedrock_msg = Message(role=openai_msg.role, content=bedrock_content_blocks)
-             bedrock_messages.append(bedrock_msg)
+        
+            bedrock_role = cast(BedrockMessageRole, openai_msg.role)
+            bedrock_msg = Message(role=bedrock_role, content=bedrock_content_blocks)
+            bedrock_messages.append(bedrock_msg)
         elif openai_msg.role == 'user': 
-             log.wanring("Warning: Skipping empty user message after conversion.")
+            log.wanring("Warning: Skipping empty user message after conversion.")
 
     return bedrock_messages
 

@@ -28,11 +28,10 @@ def test_required_scopes(key_scopes, required_scopes, is_valid):
         id=1,
         hashed_key="abc123",
         key_prefix="testing",
-        manager_id=str(uuid.uuid4()),
+        manager_id=uuid.uuid4(),
         scopes=key_scopes,
         is_active=True,
         created_at=now,
-        updated_at=now
     )
 
     scope = RequiresScope(required_scopes)

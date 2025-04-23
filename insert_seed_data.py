@@ -13,7 +13,7 @@ permissions = ['model:inference', 'model:embeddings']
 key, key_hash = generate_api_key("testing", 10)
 users = [
     {
-        "email": "test4_user@gsa.gov",
+        "email": "test5_user@gsa.gov",
         "name": "Buck",
         "role": "admin",
     }

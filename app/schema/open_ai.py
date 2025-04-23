@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, confloat, ConfigDict, NonNegativeInt
-from typing import Literal, Optional, Union, List
+from typing import Literal, Optional, Union, List, Annotated
 from datetime import datetime
 
 """
@@ -50,13 +50,13 @@ class ChatCompletionRequest(BaseModel):
     #model_config = ConfigDict(extra="ignore") 
     model: str = Field(..., description="The model to use for chat completion")
     messages: List[ChatCompletionMessage] = Field(..., description="A list of messages from the conversation so far")
-    
-    temperature: Optional[confloat(ge=0, le=2)] = Field(
+   
+    temperature: Optional[Annotated[float, confloat(ge=0, le=2)]] = Field(
         default=None,
         description="What sampling temperature: between 0 and 2"
     )
     
-    top_p: Optional[confloat(ge=0, le=1)] = Field(
+    top_p: Optional[Annotated[float, confloat(ge=0, le=1)]] = Field(
         default=None,
         description="An alternative to sampling with temperature, called nucleus sampling"
     )
@@ -81,12 +81,12 @@ class ChatCompletionRequest(BaseModel):
         description="The maximum number of tokens to generate"
     )
     
-    presence_penalty: Optional[confloat(ge=-2.0, le=2.0)] = Field(
+    presence_penalty: Optional[Annotated[float, confloat(ge=-2.0, le=2.0)]] = Field(
         default=0,
         description="Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far"
     )
     
-    frequency_penalty: Optional[confloat(ge=-2.0, le=2.0)] = Field(
+    frequency_penalty: Optional[Annotated[float, confloat(ge=-2.0, le=2.0)]]= Field(
         default=0,
         description="Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far"
     )
@@ -213,5 +213,5 @@ class CohereRequest(BaseModel):
     model: str = Field(..., exclude=True)
     texts: List[str] = Field(..., min_length=0, max_length=96)
     input_type: Literal["search_document", "search_query", "classification", "clustering"]
-    truncate: Literal["NONE", "START", "END"] = None
-    embedding_types: List[Literal["float", "int8", "uint8", "binary", "ubinary"]] = None
+    truncate: Literal["NONE", "START", "END"] = "NONE"
+    embedding_types: List[Literal["float", "int8", "uint8", "binary", "ubinary"]] = ["float"]
