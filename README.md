@@ -58,8 +58,8 @@ uv run alembic upgrade head
 ```
 
 ## Create an API Key
-You will need an API key to interact with the endpoints. There is a file `insert_seed_data.py` with some code to create a user and generate and API key. API keys are not stored in the database, so look for the output on the terminal with the key and save it. Like previous commands you can run this with `uv`:
+You will need an API key to interact with the endpoints. There is a script `create_admin_user.py` with some code to create a user and generate and API key. API keys are not stored in the database, so look for the output on the terminal with the key and save it. Like previous commands you can run this with `uv` (or python with an active venv):
 
 ```
-uv run insert_seed_data.py
+uv run create_admin_user.py -email admin@example.com --name "Testy Test"
 ```
