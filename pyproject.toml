@@ -8,6 +8,8 @@ dependencies = [
     "aioboto3>=14.1.0",
     "alembic>=1.15.1",
     "fastapi[standard]>=0.115.11",
+    "google-cloud-aiplatform>=1.90.0",
+    "google-genai>=1.11.0",
     "greenlet>=3.1.1",
     "psycopg>=3.2.5",
     "psycopg-binary>=3.2.6",
@@ -17,6 +19,7 @@ dependencies = [
     "structlog>=25.2.0",
     "types-aioboto3>=14.1.0",
     "uvicorn>=0.34.0",
+    "vertexai>=1.43.0",
 ]
 
 [dependency-groups]

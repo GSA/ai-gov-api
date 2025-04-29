@@ -1,5 +1,5 @@
 
-from app.backends.bedrock import (
+from app.backends.bedrock.converse_conversions import (
     convert_open_ai_completion_bedrock, 
     convert_bedrock_response_open_ai,
     ConverseResponse

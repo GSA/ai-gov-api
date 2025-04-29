@@ -142,10 +142,14 @@ class EmbeddingRequest(BaseModel):
         ...,
         description="ID of the model to use (e.g., 'text-embedding-3-small', 'text-embedding-ada-002')."
     )
-    encoding_format: Optional[Literal['float', 'base64']] = Field(
+
+    # openAI allows for base64 here too.
+    # other provides have many other options. 
+    # For now just stick with float
+    encoding_format: Literal['float'] = Field(
         default='float',
-        alias="encodingFormat", # Uhg, the API's camelCase parameter
-        description="The format to return the embeddings in. Can be 'float' or 'base64'."
+        alias="encodingFormat", # deal with API's camelCase parameter
+        description="The format to return the embeddings in. Currenly only 'float' is accepted."
     )
     dimensions: Optional[int] = Field(
         default=None,
@@ -155,7 +159,24 @@ class EmbeddingRequest(BaseModel):
         default=None,
         description="A unique identifier representing your end-user, which can help OpenAI monitor and detect abuse."
     )
-
+    # This is not part of the openAI spec.
+    # Vertex and Cohere embeddings offer several options here:
+    # TODO: how do we handle this? https://ai.google.dev/gemini-api/docs/embeddings#supported-task-types
+    # For now accept a union of types and decide what to do in the conversion
+    input_type: Optional[Literal[
+        "search_document",        #vertex RETRIEVAL_DOCUMENT
+        "search_query",           #vertex RETRIEVAL_QUERY
+        "classification",
+        "clustering",
+        # from vertex, no cohere equivs
+        "semantic_similarity", 
+        "question_answering",
+        "fact_verification",
+        "code_retrieval_query"
+        ]] = Field(
+        default=None,
+        description="Not part of OpenAI spec, but is used in most other models. This allows the model to optimize for specific uses" 
+    )
     model_config = ConfigDict(
         populate_by_name=True, 
         extra='ignore' 
