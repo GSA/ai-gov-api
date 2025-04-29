@@ -18,10 +18,9 @@ class CohereRequest(BaseModel):
     embedding_types: List[Literal["float", "int8", "uint8", "binary", "ubinary"]] = ["float"]
    
     @field_validator('input_type', mode='before')
-    @classmethod # Good practice for validators, especially if needing class access
+    @classmethod 
     def validate_and_coerce_input_type(cls, v: Any) -> str:
         """
-        Validates the incoming input_type against cohere's allowed values
         Cohere only supports a subset of values our API will support. 
         This allows use to just use a default when something else is passed in.
         """
