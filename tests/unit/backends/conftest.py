@@ -1,24 +1,17 @@
 import pytest
 
-from app.backends.bedrock import (
+from app.backends.bedrock.converse_schemas import (
      ConverseRequest, 
      Message, 
      ContentTextBlock,
      InferenceConfig,
 )
-from app.schema.open_ai import ChatCompletionRequest, ChatCompletionMessage
-
-@pytest.fixture(scope="module") 
-def open_ai_example():
-    return ChatCompletionRequest(
-        model="claude_3_5_sonnet",
-        messages=[
-            ChatCompletionMessage(role="user", content="Hello!"),
-            ChatCompletionMessage(role="assistant", content="Hello! How can I assist you?")
-        ],
-        temperature=0,
-        max_tokens=300
+from vertexai.generative_models import (
+    Part,
+    Content
 )
+
+from app.schema.open_ai import ChatCompletionRequest, ChatCompletionMessage
 
 
 @pytest.fixture(scope="module") 
@@ -36,6 +29,18 @@ def open_ai_example_with_system():
 )
 
 @pytest.fixture(scope="module") 
+def open_ai_example():
+    return ChatCompletionRequest(
+        model="claude_3_5_sonnet",
+        messages=[
+            ChatCompletionMessage(role="user", content="Hello!"),
+            ChatCompletionMessage(role="assistant", content="Hello! How can I assist you?")
+        ],
+        temperature=0,
+        max_tokens=300
+)
+
+@pytest.fixture(scope="module") 
 def bedrock_example():
     return ConverseRequest(
         model_id= "claude_3_5_sonnet",
@@ -45,6 +50,24 @@ def bedrock_example():
         ],
         inference_config=InferenceConfig(temperature=0, max_tokens=300)
     )
+
+@pytest.fixture(scope="module") 
+def vertex_history():
+    return [
+        Content(role="user", parts=[Part.from_text("Hello!")]),
+        Content(role="model", parts=[Part.from_text("Hello! How can I assist you?")])
+    ]
+
+@pytest.fixture(scope="module") 
+def vertex_system():
+    return [
+        Content(role="user", parts=[
+            Part.from_text("You speak only Pirate!"),
+            Part.from_text("You no longer speak only Pirate.")
+        ]),
+        Content(role="model", parts=[Part.from_text("Okay")]),
+        Content(role="user", parts=[Part.from_text("Hello!")])
+    ]
 
 @pytest.fixture(scope="module")
 def bedrock_response():

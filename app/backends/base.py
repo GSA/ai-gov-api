@@ -11,7 +11,7 @@ capabilities they have (currently just chat and embedding).
 from abc import ABC, abstractmethod
 from typing import Literal
 from pydantic import BaseModel
-from app.schema.open_ai import ChatCompletionRequest, ChatCompletionResponse, CohereRequest
+from app.schema.open_ai import ChatCompletionRequest, ChatCompletionResponse, EmbeddingRequest
 
 class LLMModel(BaseModel):
     name: str
@@ -24,7 +24,7 @@ class BackendBase(ABC):
         """Handles chat completion requests. Raises NotImplementedError if not supported."""
         raise NotImplementedError(f"{self.__class__.__name__} does not support chat completions.")
 
-    async def embeddings(self, payload:CohereRequest):
+    async def embeddings(self, payload:EmbeddingRequest):
         """Handles requests for embeddings. Raises NotImplementedError if not supported."""
         raise NotImplementedError(f"{self.__class__.__name__} does not support embeddings.")
 
