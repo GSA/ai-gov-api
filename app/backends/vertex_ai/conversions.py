@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import  List
+from typing import  List, Dict, Any
 
 import structlog
 
@@ -16,7 +16,8 @@ from app.schema.open_ai import (
     ChatCompletionUsage,
     ChatCompletionMessage,
     TextContentPart,
-    ImageContentPart
+    ImageContentPart,
+    EmbeddingRequest
 )
 
 from app.backends.utils import parse_data_uri
@@ -108,3 +109,17 @@ def convert_open_ai_messages(messages: list[ChatCompletionMessage]) -> List[Cont
         vertex_history.insert(1, Content(role="model", parts=[Part.from_text("Okay, I will follow these instructions.")]))
 
     return vertex_history
+
+def convert_open_ai_embedding(req: EmbeddingRequest):
+    gemini_params: Dict[str, Any] = {}
+
+    if isinstance(req.input, str):
+        gemini_params["texts"] = [req.input]
+    else:
+        gemini_params["texts"] = req.input
+
+    if req.dimensions is not None:
+        gemini_params["output_dimensionality"] = req.dimensions
+
+
+    return gemini_params

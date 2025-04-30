@@ -168,11 +168,7 @@ class EmbeddingRequest(BaseModel):
         "search_query",           #vertex RETRIEVAL_QUERY
         "classification",
         "clustering",
-        # from vertex, no cohere equivs
-        "semantic_similarity", 
-        "question_answering",
-        "fact_verification",
-        "code_retrieval_query"
+        "semantic_similarity",
         ]] = Field(
         default=None,
         description="Not part of OpenAI spec, but is used in most other models. This allows the model to optimize for specific uses" 

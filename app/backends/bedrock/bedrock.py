@@ -22,7 +22,7 @@ from typing import  Literal
 import aioboto3
 from aiobotocore.config import AioConfig
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -43,7 +43,7 @@ log = structlog.get_logger()
 # but also makes it easy to define supported 
 # in on location
 
-class BedrockModel(BaseModel):  
+class BedrockModel(LLMModel):  
     name: str
     id: str
     arn: str

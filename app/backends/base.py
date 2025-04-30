@@ -15,7 +15,7 @@ from app.schema.open_ai import ChatCompletionRequest, ChatCompletionResponse, Em
 
 class LLMModel(BaseModel):
     '''
-    Backends will have an assortment of models that support.
+    Backends will have an assortment of models they support.
     When the app starts it will look the backend's models property
     and expect a list of LLMModel objects. The id will be used in the
     API to select the model, and the capability will allow our

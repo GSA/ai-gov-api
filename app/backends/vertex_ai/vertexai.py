@@ -1,20 +1,21 @@
 from typing import Literal
-from pydantic import BaseModel, Field
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 import structlog
 
 import vertexai
-from vertexai.generative_models import GenerativeModel,GenerationConfig
+from vertexai.generative_models import GenerativeModel, GenerationConfig
+from vertexai.language_models import TextEmbeddingModel
 
-from app.schema.open_ai import ChatCompletionRequest, ChatCompletionResponse
+from app.schema.open_ai import ChatCompletionRequest, ChatCompletionResponse,EmbeddingRequest
 from app.backends.base import BackendBase, LLMModel
 
-from .conversions import convert_vertex_response, convert_open_ai_messages
+from .conversions import convert_vertex_response, convert_open_ai_messages, convert_open_ai_embedding
 
 log = structlog.get_logger()
 
 
-class VertexModel(BaseModel):  
+class VertexModel(LLMModel):  
     name: str
     id: str
     capability: Literal['chat', 'embedding']
@@ -30,6 +31,11 @@ class VertexModelsSettings(BaseSettings):
         name="Gemini 2.0 Flash",
         id="gemini-2.0-flash",
         capability="chat"
+    )
+    text_embedding_005:VertexModel = VertexModel(
+        name="Text embedding 005",
+        id="text-embedding-005",
+        capability="embedding"
     )
 
 
@@ -54,7 +60,6 @@ class VertexBackend(BackendBase):
         # check that model is valid before moving on
         model = GenerativeModel(model_id)
     
-
         vertex_history = convert_open_ai_messages(payload.messages)
 
         temperature = payload.temperature
@@ -84,4 +89,9 @@ class VertexBackend(BackendBase):
         
         return convert_vertex_response(response)
   
-
+    # https://cloud.google.com/vertex-ai/generative-ai/docs/model-reference/text-embeddings-api
+    async def embeddings(self, payload: EmbeddingRequest): 
+        model = TextEmbeddingModel.from_pretrained(payload.model)
+        converted = convert_open_ai_embedding(payload)
+        response  =  await model.get_embeddings_async(**converted)
+        return response
