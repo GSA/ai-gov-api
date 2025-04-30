@@ -14,11 +14,22 @@ from pydantic import BaseModel
 from app.schema.open_ai import ChatCompletionRequest, ChatCompletionResponse, EmbeddingRequest
 
 class LLMModel(BaseModel):
+    '''
+    Backends will have an assortment of models that support.
+    When the app starts it will look the backend's models property
+    and expect a list of LLMModel objects. The id will be used in the
+    API to select the model, and the capability will allow our
+    code to know whether the particular model is capable of what
+    we are asking.
+    '''
     name: str
     id: str
     capability: Literal['chat', 'embedding']
 
 class BackendBase(ABC):
+    '''
+    Subclasses of this represent AI service provides like Bedrock and Vertex.
+    '''
 
     async def invoke_model(self, payload:ChatCompletionRequest) -> ChatCompletionResponse:
         """Handles chat completion requests. Raises NotImplementedError if not supported."""

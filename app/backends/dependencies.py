@@ -4,6 +4,7 @@ from app.schema.open_ai import ChatCompletionRequest
 from app.schema.open_ai import EmbeddingRequest
 
 class Backend:
+    '''Dependency injection for routes'''
     def __init__(self, capability: str):
         self.capability = capability
 
@@ -15,6 +16,6 @@ class Backend:
         if not backend:
             raise HTTPException(status_code=422, detail=f"Model '{model_id}' is not supported by this API.",)
         elif capability != self.capability:
-            raise HTTPException(status_code=422, detail=f"This endpoint does support {capability} with the model '{model_id}'.",)
+            raise HTTPException(status_code=422, detail=f"This endpoint not does support {self.capability} with the model '{model_id}'.",)
 
         return backend
