@@ -141,7 +141,6 @@ def convert_open_ai_embedding(req: EmbeddingRequest) -> List[TextEmbeddingInput]
 
 
 def convert_vertex_embedding_response(res) -> EmbeddingResponse:
-    print(res)
     token_count = sum(int(emb.statistics.token_count) for emb in res)
     usages = EmbeddingUsage(
         promptTokens=token_count,
