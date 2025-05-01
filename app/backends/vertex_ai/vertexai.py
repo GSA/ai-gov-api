@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, Any
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 import structlog
@@ -7,10 +7,15 @@ import vertexai
 from vertexai.generative_models import GenerativeModel, GenerationConfig
 from vertexai.language_models import TextEmbeddingModel
 
-from app.schema.open_ai import ChatCompletionRequest, ChatCompletionResponse,EmbeddingRequest
+from app.schema.open_ai import ChatCompletionRequest, ChatCompletionResponse, EmbeddingRequest
 from app.backends.base import BackendBase, LLMModel
 
-from .conversions import convert_vertex_response, convert_open_ai_messages, convert_open_ai_embedding
+from .conversions import (
+    convert_vertex_response,
+    convert_open_ai_messages,
+    convert_open_ai_embedding,
+    convert_vertex_embedding_response
+)
 
 log = structlog.get_logger()
 
@@ -92,6 +97,11 @@ class VertexBackend(BackendBase):
     # https://cloud.google.com/vertex-ai/generative-ai/docs/model-reference/text-embeddings-api
     async def embeddings(self, payload: EmbeddingRequest): 
         model = TextEmbeddingModel.from_pretrained(payload.model)
-        converted = convert_open_ai_embedding(payload)
-        response  =  await model.get_embeddings_async(**converted)
-        return response
+        parameters: dict[str, Any] = {
+            "texts":  convert_open_ai_embedding(payload)
+        }
+        if payload.dimensions:
+            parameters['output_dimensionality'] = payload.dimensions
+            
+        response  =  await model.get_embeddings_async(**parameters)
+        return convert_vertex_embedding_response(response)

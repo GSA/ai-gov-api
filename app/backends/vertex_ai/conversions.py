@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import  List, Dict, Any
+from typing import  List
 
 import structlog
 
@@ -9,6 +9,8 @@ from vertexai.generative_models import (
     GenerationResponse
 )
 
+from vertexai.language_models import TextEmbeddingInput
+
 from app.schema.open_ai import (
     ChatCompletionResponse,
     ChatCompletionResponseMessage,
@@ -17,7 +19,10 @@ from app.schema.open_ai import (
     ChatCompletionMessage,
     TextContentPart,
     ImageContentPart,
-    EmbeddingRequest
+    EmbeddingRequest,
+    EmbeddingResponse,
+    EmbeddingUsage,
+    EmbeddingData
 )
 
 from app.backends.utils import parse_data_uri
@@ -110,16 +115,49 @@ def convert_open_ai_messages(messages: list[ChatCompletionMessage]) -> List[Cont
 
     return vertex_history
 
-def convert_open_ai_embedding(req: EmbeddingRequest):
-    gemini_params: Dict[str, Any] = {}
+def convert_open_ai_embedding(req: EmbeddingRequest) -> List[TextEmbeddingInput]:
+    task_type_mapping = {
+        "search_document": "RETRIEVAL_DOCUMENT",
+        "search_query": "RETRIEVAL_QUERY",
+        "classification": "CLASSIFICATION",
+        "clustering": "CLUSTERING",
+        "semantic_similarity": "SEMANTIC_SIMILARITY",
+    }
+    input_type=None
+    
+    if req.input_type:
+        input_type = task_type_mapping.get(req.input_type)
 
-    if isinstance(req.input, str):
-        gemini_params["texts"] = [req.input]
-    else:
-        gemini_params["texts"] = req.input
+    input = [req.input] if isinstance(req.input, str) else req.input
+    
+    requests = []
+    for text in input:
+        requests.append(TextEmbeddingInput(
+            text=text,
+            task_type=input_type
+        ))
 
-    if req.dimensions is not None:
-        gemini_params["output_dimensionality"] = req.dimensions
+    return requests
 
 
-    return gemini_params
+def convert_vertex_embedding_response(res) -> EmbeddingResponse:
+    print(res)
+    token_count = sum(int(emb.statistics.token_count) for emb in res)
+    usages = EmbeddingUsage(
+        promptTokens=token_count,
+        totalTokens=token_count
+    )
+    
+    return EmbeddingResponse(
+        object="list",
+        data=[
+            EmbeddingData(
+                object = "embedding",
+                embedding=emb.values, 
+                index=i
+            )
+            for i, emb in enumerate(res)
+        ],
+        model="model",
+        usage=usages
+    )
