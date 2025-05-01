@@ -34,7 +34,7 @@ from .converse_conversions import (
     convert_bedrock_response_open_ai
 )
 from .converse_schemas import ConverseResponse
-from .cohere_embedding_conversions import convert_openai_request
+from .cohere_embedding_conversions import convert_openai_request, convert_openai_repsonse
 
 log = structlog.get_logger()
 
@@ -147,10 +147,11 @@ class BedRockBackend(BackendBase):
                 accept = '*/*',
                 contentType = 'application/json'
                 )
-            
+            print("meta:", response['ResponseMetadata'])
+
             headers = response['ResponseMetadata']['HTTPHeaders']
             latency = headers['x-amzn-bedrock-invocation-latency']
+            token_count = headers['x-amzn-bedrock-input-token-count']
             log.info("embedding", latency=latency, model=modelId)
             response_body = json.loads(await response.get("body").read())
-
-            return response_body
+            return convert_openai_repsonse(response_body, token_count, modelId)

@@ -1,11 +1,11 @@
-from typing import Literal, Any
+from typing import Literal, Any, List
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 import structlog
 
 import vertexai
 from vertexai.generative_models import GenerativeModel, GenerationConfig
-from vertexai.language_models import TextEmbeddingModel
+from vertexai.language_models import TextEmbeddingModel, TextEmbedding
 
 from app.schema.open_ai import ChatCompletionRequest, ChatCompletionResponse, EmbeddingRequest
 from app.backends.base import BackendBase, LLMModel
@@ -103,5 +103,5 @@ class VertexBackend(BackendBase):
         if payload.dimensions:
             parameters['output_dimensionality'] = payload.dimensions
             
-        response  =  await model.get_embeddings_async(**parameters)
-        return convert_vertex_embedding_response(response)
+        response: List[TextEmbedding] = await model.get_embeddings_async(**parameters)
+        return convert_vertex_embedding_response(response, model_id=payload.model)
