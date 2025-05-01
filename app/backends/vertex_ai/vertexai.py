@@ -104,4 +104,5 @@ class VertexBackend(BackendBase):
             parameters['output_dimensionality'] = payload.dimensions
             
         response: List[TextEmbedding] = await model.get_embeddings_async(**parameters)
+        print(response)
         return convert_vertex_embedding_response(response, model_id=payload.model)
