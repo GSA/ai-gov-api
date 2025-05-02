@@ -14,7 +14,6 @@ backend_instances = [
 # TODO revist this if we have more capabilities; this probably won't scale
 BACKEND_MAP:dict[str,tuple[BackendBase, Literal['chat', 'embedding']]] ={}
 
-#bedrock_backend = BedRockBackend()
 for backend in backend_instances:
     for model in backend.models:
         BACKEND_MAP[model.id] = backend, model.capability

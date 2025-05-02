@@ -48,8 +48,10 @@ def test_vertex_embedding_response_conversion(vertex_embedding_output):
     res = convert_vertex_embedding_response(vertex_embedding_output, model_id)
     assert res.data[0].embedding == [-0.1, 0.2, -0.5]
     assert res.data[1].embedding == [0.4, 0.2, 0.5]
-
+    assert len(res.data) == 2
+    
 def test_vertex_embedding_response_token_count(vertex_embedding_output):
+    '''It should report the sum of all tokens'''
     model_id = "some-model"
     res = convert_vertex_embedding_response(vertex_embedding_output, model_id)
     assert res.usage.total_tokens == 12
