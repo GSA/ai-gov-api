@@ -18,7 +18,7 @@ async def models(
     return  [backend for _, backend in settings.backend_map.values()]
 
 
-@router.post("/chat")
+@router.post("/chat/completions")
 async def converse(
     req: ChatCompletionRequest, 
     api_key=Depends(RequiresScope([Scope.MODELS_INFERENCE])),

@@ -1,6 +1,7 @@
 from datetime import datetime
-from fastapi import HTTPException, status, Depends, Security
-from fastapi.security import APIKeyHeader
+from fastapi import HTTPException, status, Depends
+from fastapi.security import HTTPAuthorizationCredentials
+from fastapi.security import HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 import structlog
 
@@ -10,18 +11,18 @@ from app.auth.repositories import APIKeyRepository
 
 logger = structlog.get_logger()
 
-api_key_header = APIKeyHeader(name="X-API-Key")
-
+security = HTTPBearer()
 
 async def valid_api_key(
-    api_key_header:str=Security(api_key_header), 
+    credentials:HTTPAuthorizationCredentials =  Depends(security), 
     session: AsyncSession=Depends(get_db_session)
     ) -> APIKeyOut:
     '''
     Auth dependency injection that looks for the API key and returns the user.
     If the API key does not exist, raises 401.
     '''
-    api_key = await APIKeyRepository(session).get_by_api_key_value(api_key_header)
+    request_api_key = credentials.credentials
+    api_key = await APIKeyRepository(session).get_by_api_key_value(request_api_key)
 
     if api_key is None or not api_key.is_active:
         raise HTTPException(
