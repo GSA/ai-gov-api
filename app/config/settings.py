@@ -1,22 +1,22 @@
-from typing import Literal
+from typing import List
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from app.backends.base import BackendBase
+from app.backends.base import Backend, LLMModel
 from app.backends.bedrock.bedrock import BedRockBackend
 from app.backends.vertex_ai.vertexai import VertexBackend
 
 # Register backends
-backend_instances = [
+backend_instances: List[Backend]  = [
     BedRockBackend(),
     VertexBackend()
 ]
 
 # TODO revist this if we have more capabilities; this probably won't scale
-BACKEND_MAP:dict[str,tuple[BackendBase, Literal['chat', 'embedding']]] ={}
+BACKEND_MAP:dict[str,tuple[Backend, LLMModel]] ={}
 
 for backend in backend_instances:
     for model in backend.models:
-        BACKEND_MAP[model.id] = backend, model.capability
+        BACKEND_MAP[model.id] = backend, model
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file='.env', extra="ignore", env_file_encoding='utf-8', env_nested_delimiter="__" )

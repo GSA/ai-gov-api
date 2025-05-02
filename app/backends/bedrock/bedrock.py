@@ -27,7 +27,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 from app.schema.open_ai import ChatCompletionRequest, EmbeddingRequest
-from app.backends.base import BackendBase, LLMModel
+from app.backends.base import Backend, LLMModel
 
 from .converse_conversions import (
     convert_open_ai_completion_bedrock, 
@@ -82,7 +82,7 @@ class BedrockModelsSettings(BaseSettings):
 # to ensure the correct instance handles requests. This is how the 
 # application knows which backends serve which models.
 
-class BedRockBackend(BackendBase):
+class BedRockBackend(Backend):
     class Settings(BaseSettings):
         model_config = SettingsConfigDict(env_file='.env',extra='ignore', env_file_encoding='utf-8', env_nested_delimiter="__" )
         bedrock_assume_role: str = Field(default=...)

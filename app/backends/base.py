@@ -26,7 +26,7 @@ class LLMModel(BaseModel):
     id: str
     capability: Literal['chat', 'embedding']
 
-class BackendBase(ABC):
+class Backend(ABC):
     '''
     Subclasses of this represent AI service provides like Bedrock and Vertex.
     '''
