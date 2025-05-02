@@ -4,8 +4,9 @@ from typing import Optional
 
 import structlog
 from structlog.contextvars import  merge_contextvars
-from app.config.settings import settings
+from app.config.settings import get_settings
 
+settings = get_settings()
 
 def setup_structlog():
     """Configure structlog for FastAPI application logging"""

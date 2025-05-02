@@ -5,8 +5,9 @@ from sqlalchemy import pool
 from alembic import context
 
 from app.db.models import Base
-from app.config.settings import settings
+from app.config.settings import get_settings
 
+settings = get_settings()
 db_uri = str(settings.postgres_connection)
 
 # this is the Alembic Config object, which provides

@@ -47,10 +47,13 @@ class RequiresScope:
         self,
         api_key: APIKeyOut = Depends(valid_api_key)
         ) -> APIKeyOut:
-
-        if not self.scopes:
+        
+        if len(self.scopes) == 0:
             return api_key
         
+        print("here, ", api_key)
+        print("here, scopes", self.scopes)
+
         if self.scopes.issubset(set(api_key.scopes)):
             return api_key
 

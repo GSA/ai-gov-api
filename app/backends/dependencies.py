@@ -1,5 +1,5 @@
-from fastapi import HTTPException
-from app.config.settings import BACKEND_MAP
+from fastapi import HTTPException, Depends
+from app.config.settings import get_settings
 from app.schema.open_ai import ChatCompletionRequest
 from app.schema.open_ai import EmbeddingRequest
 
@@ -8,10 +8,10 @@ class Backend:
     def __init__(self, capability: str):
         self.capability = capability
 
-    def __call__(self, req: ChatCompletionRequest | EmbeddingRequest):
+    def __call__(self, req: ChatCompletionRequest | EmbeddingRequest, settings=Depends(get_settings)):
         model_id = req.model
 
-        backend, model = BACKEND_MAP.get(model_id, (None, None))
+        backend, model = settings.backend_map.get(model_id, (None, None))
 
         if not backend or not model:
             raise HTTPException(status_code=422, detail=f"Model '{model_id}' is not supported by this API.",)

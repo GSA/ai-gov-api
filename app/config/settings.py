@@ -1,3 +1,4 @@
+from functools import lru_cache
 from typing import List
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -11,12 +12,11 @@ backend_instances: List[Backend]  = [
     VertexBackend()
 ]
 
-# TODO revist this if we have more capabilities; this probably won't scale
-BACKEND_MAP:dict[str,tuple[Backend, LLMModel]] ={}
+_backend_map:dict[str,tuple[Backend, LLMModel]] ={}
 
 for backend in backend_instances:
     for model in backend.models:
-        BACKEND_MAP[model.id] = backend, model
+        _backend_map[model.id] = backend, model
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file='.env', extra="ignore", env_file_encoding='utf-8', env_nested_delimiter="__" )
@@ -29,4 +29,10 @@ class Settings(BaseSettings):
     bedrock_assume_role: str = Field(default=...)
     aws_default_region: str = Field(default=...)
 
-settings = Settings()
+    backend_map:dict[str,tuple[Backend, LLMModel]]
+
+
+@lru_cache()
+def get_settings() -> Settings:
+    return Settings(backend_map=_backend_map)
+
