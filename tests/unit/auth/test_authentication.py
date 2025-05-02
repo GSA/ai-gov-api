@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from unittest.mock import AsyncMock  
 
 from fastapi import HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials
 from app.auth.dependencies import valid_api_key
 from app.auth.schemas import APIKeyOut
 
@@ -15,11 +16,11 @@ API_KEY_REPOSITORY_PATH = "app.auth.dependencies.APIKeyRepository"
 pytestmark = pytest.mark.asyncio
 
 @pytest.fixture(scope="module") 
-def api_key():
+def api_key() -> HTTPAuthorizationCredentials:
     # the unit under test does not validate the api key
     # but we'll use it to make sure it's passing to the 
     # repository correctly
-    return "testing_abc123"
+    return HTTPAuthorizationCredentials(scheme="Bearer", credentials='testing_abc123')
 
 @pytest.fixture(scope="module") 
 def good_api_key():
@@ -90,10 +91,10 @@ async def test_passes_api_key_to_repo(mocker, good_api_key, api_key):
         return_value=mock_api_key_repo 
     )
 
-    await valid_api_key(api_key_header=api_key, session=mock_session)
+    await valid_api_key(credentials=api_key, session=mock_session)
 
     mock_api_key_repository_class.assert_called_once_with(mock_session)
-    mock_api_key_repo.get_by_api_key_value.assert_awaited_once_with(api_key)
+    mock_api_key_repo.get_by_api_key_value.assert_awaited_once_with(api_key.credentials)
 
 
 async def test_get_api_key_valid_key(mocker, good_api_key, api_key):
@@ -110,7 +111,7 @@ async def test_get_api_key_valid_key(mocker, good_api_key, api_key):
         return_value=mock_api_key_repo 
     )
 
-    returned_key = await valid_api_key(api_key_header=api_key, session=mock_session)
+    returned_key = await valid_api_key(credentials=api_key, session=mock_session)
 
     assert returned_key == good_api_key
     assert returned_key.is_active is True
@@ -131,7 +132,7 @@ async def test_get_token_inactive_key(mocker, inactive_api_key, api_key):
     )
 
     with pytest.raises(HTTPException) as exc_info:
-        await valid_api_key(api_key_header=api_key, session=mock_session)
+        await valid_api_key(credentials=api_key, session=mock_session)
 
     assert exc_info.value.status_code == status.HTTP_401_UNAUTHORIZED
     assert "Missing or invalid API key" in exc_info.value.detail
@@ -152,7 +153,7 @@ async def test_get_token_expired_token(mocker, expired_api_key, api_key):
     )
 
     with pytest.raises(HTTPException) as exc_info:
-        await valid_api_key(api_key_header=api_key, session=mock_session)
+        await valid_api_key(credentials=api_key, session=mock_session)
 
     assert exc_info.value.status_code == status.HTTP_401_UNAUTHORIZED
     assert "API key is expired" in exc_info.value.detail
@@ -171,7 +172,7 @@ async def test_get_token_non_expired_token(mocker, non_expired_api_key, api_key)
         return_value=mock_api_key_repo 
     )
 
-    returned_api_key = await valid_api_key(api_key_header=api_key, session=mock_session)
+    returned_api_key = await valid_api_key(credentials=api_key, session=mock_session)
 
     assert returned_api_key == non_expired_api_key
     assert returned_api_key.is_active is True
