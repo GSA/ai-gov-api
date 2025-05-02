@@ -11,11 +11,11 @@ class Backend:
     def __call__(self, req: ChatCompletionRequest | EmbeddingRequest):
         model_id = req.model
 
-        backend, capability = BACKEND_MAP.get(model_id, (None, None))
+        backend, model = BACKEND_MAP.get(model_id, (None, None))
 
-        if not backend:
+        if not backend or not model:
             raise HTTPException(status_code=422, detail=f"Model '{model_id}' is not supported by this API.",)
-        elif capability != self.capability:
+        elif model.capability != self.capability:
             raise HTTPException(status_code=422, detail=f"This endpoint not does support {self.capability} with the model '{model_id}'.",)
 
         return backend

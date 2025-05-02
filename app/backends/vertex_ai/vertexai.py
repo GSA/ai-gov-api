@@ -8,7 +8,7 @@ from vertexai.generative_models import GenerativeModel, GenerationConfig
 from vertexai.language_models import TextEmbeddingModel, TextEmbedding
 
 from app.schema.open_ai import ChatCompletionRequest, ChatCompletionResponse, EmbeddingRequest
-from app.backends.base import BackendBase, LLMModel
+from app.backends.base import Backend, LLMModel
 
 from .conversions import (
     convert_vertex_response,
@@ -44,7 +44,7 @@ class VertexModelsSettings(BaseSettings):
     )
 
 
-class VertexBackend(BackendBase):
+class VertexBackend(Backend):
     class Settings(BaseSettings):
         model_config = SettingsConfigDict(env_file='.env',extra='ignore', env_file_encoding='utf-8', env_nested_delimiter="__" )
         vertex_project_id:str = Field(default=...)
@@ -104,5 +104,4 @@ class VertexBackend(BackendBase):
             parameters['output_dimensionality'] = payload.dimensions
             
         response: List[TextEmbedding] = await model.get_embeddings_async(**parameters)
-        print(response)
         return convert_vertex_embedding_response(response, model_id=payload.model)
