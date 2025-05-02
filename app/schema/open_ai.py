@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, confloat, ConfigDict, NonNegativeInt
+from pydantic import BaseModel, Field, confloat, ConfigDict, NonNegativeInt, field_serializer
 from typing import Literal, Optional, Union, List, Annotated
 from datetime import datetime
 
@@ -124,7 +124,10 @@ class ChatCompletionResponse(BaseModel):
     model: str
     choices: List[ChatCompletionChoice]
     usage: ChatCompletionUsage
-
+    
+    @field_serializer('created')
+    def serialize_dt(self, created: datetime, _info):
+        return int(created.timestamp())
 
 ### Embedding Requests Models ###
 # This is not used at the moment — it's not clear how to convert to Bedrock's Cohere model
