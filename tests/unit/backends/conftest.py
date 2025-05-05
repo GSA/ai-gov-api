@@ -4,14 +4,18 @@ from app.backends.bedrock.converse_schemas import (
      ConverseRequest, 
      Message, 
      ContentTextBlock,
-     InferenceConfig,
+     InferenceConfig
 )
-from vertexai.generative_models import (
-    Part,
-    Content
-)
+from vertexai.generative_models import Part,Content
 
-from app.schema.open_ai import ChatCompletionRequest, ChatCompletionMessage, ImageContentPart, ImageUrl
+from app.schema.open_ai import (
+    ChatCompletionRequest,
+    ChatCompletionMessage,
+    ImageContentPart,
+    ImageUrl,
+    FileContent,
+    FileContentPart
+)
 
 
 @pytest.fixture(scope="module") 
@@ -53,6 +57,18 @@ def open_ai_example_image(request):
         max_tokens=300
 )
 
+@pytest.fixture(scope="module") 
+def open_ai_example_file(request):
+    return ChatCompletionRequest(
+        model="claude_3_5_sonnet",
+        messages=[
+            ChatCompletionMessage(role="user", content=[
+                FileContentPart(file=FileContent(file_data=request.param))
+            ])
+        ],
+        temperature=0,
+        max_tokens=300
+)
 @pytest.fixture(scope="module") 
 def bedrock_example():
     return ConverseRequest(

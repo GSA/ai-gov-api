@@ -5,7 +5,8 @@ from app.backends.bedrock.converse_conversions import (
     convert_open_ai_completion_bedrock, 
     convert_bedrock_response_open_ai,
     ConverseResponse,
-    ContentImageBlock
+    ContentImageBlock,
+    ContentDocumentBlock
 )
 
 from app.backends.exceptions import InvalidBase64DataError
@@ -15,6 +16,7 @@ def test_convert_open_ai_request(bedrock_example, open_ai_example):
     '''Should convert a valid OpenAI ChatCompletion requests to a Bedrock Converse Request'''
     converted = convert_open_ai_completion_bedrock(open_ai_example)
     assert converted.model_dump(by_alias=True) == bedrock_example.model_dump(by_alias=True)
+
 
 def test_convert_open_ai_request_with_system_prompt(bedrock_example, open_ai_example_with_system):
     '''Should extract system prompts from OpenAi content blocks into single list'''
@@ -26,6 +28,7 @@ def test_convert_open_ai_request_with_system_prompt(bedrock_example, open_ai_exa
     ]
     assert converted_dict['messages'] == [{'role': 'user', 'content': [{'text': 'Hello!'}]}]
 
+
 @pytest.mark.parametrize(
     ("open_ai_example_image", "expected_exc", "msg_part"),
     [
@@ -35,8 +38,7 @@ def test_convert_open_ai_request_with_system_prompt(bedrock_example, open_ai_exa
         pytest.param("data:image/jpeg;base64,abcd=", None, [b'i\xb7\x1d', "jpeg"]),
 
     ],
-    indirect=("open_ai_example_image",)
-)
+    indirect=("open_ai_example_image",))
 def test_convert_open_ai_request_with_image(open_ai_example_image, expected_exc, msg_part):
     ''' It should produce the correct bytes for good image formats or raise appropriate exception'''
     if expected_exc is not None:
@@ -51,12 +53,35 @@ def test_convert_open_ai_request_with_image(open_ai_example_image, expected_exc,
         assert imageblock.image.format == format
         assert imageblock.image.source.data == data_bytes
 
+
+@pytest.mark.parametrize(
+    ("open_ai_example_file", "expected_exc", "msg_part"),
+    [
+        pytest.param("abci23", InvalidBase64DataError, "Invalid base64 encoding"),
+        pytest.param(",abcd=", None, b'i\xb7\x1d'),
+
+    ],
+    indirect=("open_ai_example_file", ))
+def test_convert_open_ai_request_with_file(open_ai_example_file, expected_exc, msg_part):
+    ''' It should produce the correct bytes for good document formats or raise appropriate exception'''
+    if expected_exc is not None:
+        with pytest.raises(expected_exc) as exc_info:
+            convert_open_ai_completion_bedrock(open_ai_example_file)
+        assert msg_part in str(exc_info.value)
+    else:
+        converted = convert_open_ai_completion_bedrock(open_ai_example_file)
+        assert len(converted.messages) == 1
+        document_block:ContentDocumentBlock = cast(ContentDocumentBlock, converted.messages[0].content[0])
+        assert document_block.document.source.data == msg_part
+
+
 def test_convert_camel_case(open_ai_example):
     '''The bedrock model uses camelCase in spots. Make sure we correctly serialize'''
     converted = convert_open_ai_completion_bedrock(open_ai_example)
     serialized = converted.model_dump(by_alias=True)
     assert "inferenceConfig" in serialized
     assert "maxTokens" in serialized['inferenceConfig']
+
 
 def test_bedrock_response(bedrock_response):
     response = ConverseResponse(**bedrock_response)
