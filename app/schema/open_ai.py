@@ -27,12 +27,27 @@ class ImageUrl(BaseModel):
     url: str = Field(..., description="The base64 encoded image data URI.")
     detail: Optional[Literal["auto", "low", "high"]] = Field("auto", description="Specifies the detail level of the image.")
 
+class FileContent(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    file_data: str = Field(..., description="File data encoded as Base64 string")
+    # these seem tied to OpenAI's file api. Most likely ignoring for now.
+    file_id: Optional[str] = Field(default=None, description="The ID of an uploaded file to use as input")
+    file_name: Optional[str] = Field(default=None, description="The name of the file, used when passing the file to the model as a string.")
+
+
 class TextContentPart(BaseModel):
     """Represents a text part in a multimodal content list."""
     model_config = ConfigDict(extra="ignore")
 
     type: Literal["text"] = "text"
     text: str
+
+class FileContentPart(BaseModel):
+    """Represents a file"""
+    model_config = ConfigDict(extra="ignore")
+    type: Literal["file"] = "file"
+    file: FileContent
 
 class ImageContentPart(BaseModel):
     """Represents an image part in a multimodal content list."""
@@ -41,7 +56,7 @@ class ImageContentPart(BaseModel):
     type: Literal["image_url"] = "image_url"
     image_url: ImageUrl
 
-ContentPart = Union[TextContentPart, ImageContentPart]
+ContentPart = Union[TextContentPart, ImageContentPart, FileContentPart]
 
 class ChatCompletionMessage(BaseModel):
     model_config = ConfigDict(extra="ignore")

@@ -1,12 +1,14 @@
 from typing import List
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from app.auth.dependencies import RequiresScope, valid_api_key
 from app.auth.schemas import Scope
 from app.backends.base import LLMModel
 from app.backends.dependencies import Backend
+from app.backends.exceptions import InputDataError
 from app.config.settings import get_settings
 from app.schema.open_ai import ChatCompletionRequest, ChatCompletionResponse, EmbeddingRequest
+
 
 router = APIRouter()
 
@@ -24,7 +26,15 @@ async def converse(
     api_key=Depends(RequiresScope([Scope.MODELS_INFERENCE])),
     backend=Depends(Backend('chat'))
 ) -> ChatCompletionResponse:
-    return await backend.invoke_model(req)
+    try:
+        return await backend.invoke_model(req)
+    except InputDataError as e:
+        error_detail = {"error": "Bad Request", "message": str(e)}
+        if e.field_name:
+            error_detail["field"] = e.field_name
+        raise HTTPException(status_code=400, detail=error_detail)
+
+
 
 @router.post("/embeddings")
 async def embeddings(
