@@ -11,7 +11,7 @@ from vertexai.generative_models import (
     Content
 )
 
-from app.schema.open_ai import ChatCompletionRequest, ChatCompletionMessage
+from app.schema.open_ai import ChatCompletionRequest, ChatCompletionMessage, ImageContentPart, ImageUrl
 
 
 @pytest.fixture(scope="module") 
@@ -35,6 +35,19 @@ def open_ai_example():
         messages=[
             ChatCompletionMessage(role="user", content="Hello!"),
             ChatCompletionMessage(role="assistant", content="Hello! How can I assist you?")
+        ],
+        temperature=0,
+        max_tokens=300
+)
+
+@pytest.fixture(scope="module") 
+def open_ai_example_image(request):
+    return ChatCompletionRequest(
+        model="claude_3_5_sonnet",
+        messages=[
+            ChatCompletionMessage(role="user", content=[
+                ImageContentPart(image_url=ImageUrl(url=request.param, detail="auto"))
+            ])
         ],
         temperature=0,
         max_tokens=300

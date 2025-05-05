@@ -1,9 +1,14 @@
+from typing import cast 
+import pytest 
 
 from app.backends.bedrock.converse_conversions import (
     convert_open_ai_completion_bedrock, 
     convert_bedrock_response_open_ai,
-    ConverseResponse
+    ConverseResponse,
+    ContentImageBlock
 )
+
+from app.backends.exceptions import InvalidBase64DataError
 
 
 def test_convert_open_ai_request(bedrock_example, open_ai_example):
@@ -21,6 +26,30 @@ def test_convert_open_ai_request_with_system_prompt(bedrock_example, open_ai_exa
     ]
     assert converted_dict['messages'] == [{'role': 'user', 'content': [{'text': 'Hello!'}]}]
 
+@pytest.mark.parametrize(
+    ("open_ai_example_image", "expected_exc", "msg_part"),
+    [
+        pytest.param("abci23", InvalidBase64DataError, "Invalid base64 encoding"),
+        pytest.param("data:image/xls", InvalidBase64DataError, "Invalid or unsupported image data URI format."),
+        pytest.param("data:image/jpeg;base64,abcde", InvalidBase64DataError, "Invalid base64 encoding"),
+        pytest.param("data:image/jpeg;base64,abcd=", None, [b'i\xb7\x1d', "jpeg"]),
+
+    ],
+    indirect=("open_ai_example_image",)
+)
+def test_convert_open_ai_request_with_image(open_ai_example_image, expected_exc, msg_part):
+    ''' It should produce the correct bytes for good image formats or raise appropriate exception'''
+    if expected_exc is not None:
+        with pytest.raises(expected_exc) as exc_info:
+            convert_open_ai_completion_bedrock(open_ai_example_image)
+        assert msg_part in str(exc_info.value)
+    else:
+        data_bytes, format = msg_part
+        converted = convert_open_ai_completion_bedrock(open_ai_example_image)
+        assert len(converted.messages) == 1
+        imageblock:ContentImageBlock = cast(ContentImageBlock, converted.messages[0].content[0])
+        assert imageblock.image.format == format
+        assert imageblock.image.source.data == data_bytes
 
 def test_convert_camel_case(open_ai_example):
     '''The bedrock model uses camelCase in spots. Make sure we correctly serialize'''
