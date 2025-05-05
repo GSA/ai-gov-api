@@ -8,3 +8,7 @@ class InputDataError(Exception):
 class InvalidBase64DataError(InputDataError):
     """Error for failures during Base64 decoding."""
     pass
+
+class InvalidImageURLError(InputDataError):
+    """Error for failures during data:url decoding."""
+    pass

@@ -20,7 +20,7 @@ from app.schema.open_ai import (
     FileContentPart,
     #EmbeddingRequest
 )
-from ..exceptions import InvalidBase64DataError
+from ..exceptions import InvalidBase64DataError, InputDataError
 from .converse_schemas import (
     Message,
     ContentBlock,
@@ -96,7 +96,7 @@ def convert_open_ai_messages(messages: list[ChatCompletionMessage]) -> tuple[Lis
                         if image_url.url.startswith("data:image"):
                             try:
                                 image_data = parse_data_uri(image_url.url)
-                            except binascii.Error as e:
+                            except InputDataError as e:
                                 raise InvalidBase64DataError(
                                     f"Invalid base64 encoding at message index '{idx}': {e}",
                                     field_name=part.type,
@@ -114,7 +114,7 @@ def convert_open_ai_messages(messages: list[ChatCompletionMessage]) -> tuple[Lis
                             bedrock_content_blocks.append(ContentImageBlock(image=payload))
                         else:
                             raise InvalidBase64DataError(
-                                f"Invalid base64 encoding at message index '{idx}': image ursl must begin with 'data:image'",
+                                f"Invalid base64 encoding at message index '{idx}': image url must begin with 'data:image'",
                                 field_name=part.type
                             )
        
