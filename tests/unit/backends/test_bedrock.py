@@ -36,8 +36,7 @@ def test_convert_open_ai_request_with_system_prompt(bedrock_example, open_ai_exa
         pytest.param("data:image/xls", InvalidBase64DataError, "Invalid or unsupported image data URI format."),
         pytest.param("data:image/jpeg;base64,abcde", InvalidBase64DataError, "Invalid base64 encoding"),
         pytest.param("data:image/jpeg;base64,abcd=", None, [b'i\xb7\x1d', "jpeg"]),
-
-    ],
+    ], 
     indirect=("open_ai_example_image",))
 def test_convert_open_ai_request_with_image(open_ai_example_image, expected_exc, msg_part):
     ''' It should produce the correct bytes for good image formats or raise appropriate exception'''
@@ -59,8 +58,7 @@ def test_convert_open_ai_request_with_image(open_ai_example_image, expected_exc,
     [
         pytest.param("abci23", InvalidBase64DataError, "Invalid base64 encoding"),
         pytest.param(",abcd=", None, b'i\xb7\x1d'),
-
-    ],
+    ], 
     indirect=("open_ai_example_file", ))
 def test_convert_open_ai_request_with_file(open_ai_example_file, expected_exc, msg_part):
     ''' It should produce the correct bytes for good document formats or raise appropriate exception'''
