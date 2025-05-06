@@ -3,9 +3,9 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from app.auth.dependencies import RequiresScope, valid_api_key
 from app.auth.schemas import Scope
-from app.backends.base import LLMModel
-from app.backends.dependencies import Backend
-from app.backends.exceptions import InputDataError
+from app.providers.base import LLMModel
+from app.providers.dependencies import Backend
+from app.providers.exceptions import InputDataError
 from app.config.settings import get_settings
 from app.schema.open_ai import ChatCompletionRequest, ChatCompletionResponse, EmbeddingRequest
 

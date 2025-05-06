@@ -8,7 +8,7 @@ from app.main import app
 from app.config.settings import Settings, get_settings
 from app.auth.dependencies import valid_api_key
 from app.auth.schemas import APIKeyOut 
-from app.backends.base import LLMModel, Backend
+from app.providers.base import LLMModel, Backend
 
 T = TypeVar("T")
 YieldFixture = Generator[T, None, None]
