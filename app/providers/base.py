@@ -15,7 +15,7 @@ from .core.chat_schema import ChatRequest, ChatRepsonse
 from .core.embed_schema import EmbedRequest
 class LLMModel(BaseModel):
     '''
-    Backends will have an assortment of models they support.
+    Providers will have an assortment of models they support.
     When the app starts it will look the backend's models property
     and expect a list of LLMModel objects. The id will be used in the
     API to select the model, and the capability will allow our

@@ -1,5 +1,5 @@
 '''
-backends.bedrock
+Provider.bedrock
 ~~~~~~~~~~~~~~~~
 
 This module is responsible for accepting requests in the form of OpenAI Chat Completions, 
