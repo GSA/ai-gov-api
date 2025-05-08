@@ -1,6 +1,3 @@
-import base64
-import binascii
-
 from datetime import datetime
 from typing import Optional, Union, List, get_args, cast
 
@@ -8,7 +5,7 @@ import structlog
 
 from app.providers.utils import parse_data_uri
 
-from app.schema.open_ai import (
+from app.providers.open_ai.schemas import (
     ChatCompletionMessage,
     ChatCompletionRequest,
     ChatCompletionResponse,

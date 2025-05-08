@@ -13,7 +13,7 @@ from vertexai.generative_models import (
 
 from vertexai.language_models import TextEmbeddingInput
 
-from app.schema.open_ai import (
+from app.providers.open_ai.schemas import (
     ChatCompletionResponse,
     ChatCompletionResponseMessage,
     ChatCompletionChoice,

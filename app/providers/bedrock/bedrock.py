@@ -26,13 +26,12 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 from app.providers.base import Backend, LLMModel
-from ..adaptors.core_to_bedrock import core_to_bedrock, core_embed_request_to_bedrock
-from ..adaptors.bedrock_to_core import bedrock_chat_response_to_core, bedorock_embed_reposonse_to_core
+from .adapter_from_core import core_to_bedrock, core_embed_request_to_bedrock
+from .adapter_to_core import bedrock_chat_response_to_core, bedorock_embed_reposonse_to_core
 from ..core.chat_schema import ChatRequest, ChatRepsonse
 from ..core.embed_schema import EmbeddingResponse, EmbedRequest
 from .converse_schemas import ConverseResponse
 from .cohere_embedding_schemas import CohereRepsonse
-#from .cohere_embedding_conversions import convert_openai_request
 
 log = structlog.get_logger()
 

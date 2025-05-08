@@ -1,4 +1,4 @@
-from typing import Literal, Any, List
+from typing import Literal, List
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 import structlog
@@ -8,11 +8,10 @@ from vertexai.generative_models import GenerativeModel, GenerationConfig
 from vertexai.language_models import TextEmbeddingModel, TextEmbedding
 from ..core.embed_schema import EmbedRequest
 
-#from app.schema.open_ai import EmbeddingRequest
 from app.providers.base import Backend, LLMModel
 from ..core.chat_schema import ChatRequest, ChatRepsonse
-from ..adaptors.core_to_vertex import convert_core_messages, convert_embedding_request
-from ..adaptors.vertex_to_core import convert_chat_vertex_response, vertex_embed_reposonse_to_core
+from .adapter_from_core import convert_core_messages, convert_embedding_request
+from .adapter_to_core import convert_chat_vertex_response, vertex_embed_reposonse_to_core
 
 log = structlog.get_logger()
 
@@ -76,7 +75,7 @@ class VertexBackend(Backend):
             generation_config=generation_config
         )
         
-        return convert_chat_vertex_response(response)
+        return convert_chat_vertex_response(response, model=model_id)
   
     # https://cloud.google.com/vertex-ai/generative-ai/docs/model-reference/text-embeddings-api
     async def embeddings(self, payload: EmbedRequest): 

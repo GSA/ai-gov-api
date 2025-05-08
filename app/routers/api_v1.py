@@ -7,9 +7,9 @@ from app.providers.base import LLMModel
 from app.providers.dependencies import Backend
 from app.providers.exceptions import InputDataError
 from app.config.settings import get_settings
-from app.schema.open_ai import ChatCompletionRequest, ChatCompletionResponse, EmbeddingRequest, EmbeddingResponse
-from app.providers.adaptors.open_ai_to_core import openai_chat_request_to_core, openai_embed_request_to_core
-from app.providers.adaptors.core_to_openai import core_chat_response_to_openai, core_embed_response_to_openai
+from app.providers.open_ai.schemas import ChatCompletionRequest, ChatCompletionResponse, EmbeddingRequest, EmbeddingResponse
+from app.providers.open_ai.adapter_to_core import openai_chat_request_to_core, openai_embed_request_to_core
+from app.providers.open_ai.adapter_from_core import core_chat_response_to_openai, core_embed_response_to_openai
 
 router = APIRouter()
 

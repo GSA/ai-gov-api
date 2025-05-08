@@ -11,7 +11,7 @@ OpenAI -> IF -> |-> Vertex
                 |-> Others
 '''
 from datetime import datetime
-from typing import Literal, Annotated, Optional, List, Any
+from typing import Literal, Annotated, Optional, List, Any, Sequence
 from pydantic import BaseModel, Field, BeforeValidator
 
 def convert_str(value: Any) -> Any:  
@@ -39,23 +39,23 @@ class FilePart(BaseModel):
 ContentPart = Annotated[TextPart | ImagePart | FilePart, Field(discriminator="type")]
 class UserMessage(BaseModel):
     role: Literal["user"] = "user"  
-    content: Annotated[List[ContentPart], BeforeValidator(convert_str)]
+    content: Annotated[Sequence[ContentPart], BeforeValidator(convert_str)]
 
 class AssistantMessage(BaseModel):
     role: Literal["assistant"] = "assistant"  
-    content: Annotated[List[ContentPart], BeforeValidator(convert_str)]
+    content: Annotated[Sequence[ContentPart], BeforeValidator(convert_str)]
 
 class SystemMessage(BaseModel):
     role: Literal['system'] = "system"
-    content: Annotated[List[TextPart], BeforeValidator(convert_str)]
+    content: Annotated[Sequence[TextPart], BeforeValidator(convert_str)]
 
-Message = Annotated[UserMessage |AssistantMessage | SystemMessage, Field(discriminator="role")]
+Message = Annotated[UserMessage | AssistantMessage | SystemMessage, Field(discriminator="role")]
 
 class ChatRequest(BaseModel):
     model: str
-    messages: List[Message]
-    temperature: Optional[float] = 1.0
-    top_p: Optional[float] = 1.0
+    messages: Sequence[Message]
+    temperature: Optional[float] = None
+    top_p: Optional[float] = None
     max_tokens: Optional[int] = None
     stream: Optional[bool] = False
     stop: Optional[List[str]] = None

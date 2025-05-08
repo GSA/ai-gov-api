@@ -1,7 +1,7 @@
 from fastapi import HTTPException, Depends
 from app.config.settings import get_settings
-from app.schema.open_ai import ChatCompletionRequest
-from app.schema.open_ai import EmbeddingRequest
+from app.providers.open_ai.schemas import ChatCompletionRequest
+from app.providers.open_ai.schemas import EmbeddingRequest
 from app.providers.base import Backend as BackendBase
 
 class Backend:
