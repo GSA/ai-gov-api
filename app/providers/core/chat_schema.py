@@ -3,12 +3,15 @@ This is an intermediate format representing an abstract chat request.
 It's purpose it to insulate from changes to the OpenAI API and prevent
 re-writing conversion code.
 
+Other provides should provide adapters for conterting to and from this schema
+and should never "know" about other provider format.
+
 OpenAI requests will be converted into this form and wll concrete representations
 should convert from this.
 
-                |-> Bedrock
-OpenAI -> IF -> |-> Vertex
-                |-> Others
+                  |-> Bedrock
+OpenAI -> Core -> |-> Vertex
+                  |-> Others
 '''
 from datetime import datetime
 from typing import Literal, Annotated, Optional, List, Any, Sequence

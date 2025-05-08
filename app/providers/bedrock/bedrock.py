@@ -2,14 +2,14 @@
 Provider.bedrock
 ~~~~~~~~~~~~~~~~
 
-This module is responsible for accepting requests in the form of OpenAI Chat Completions, 
+This module is responsible for accepting requests in the form of the Core API Model, 
 interacting with various bedrock models, and returning an well-formed response.
 
-It has thee part:
+It has three part:
 
 1. Getting its settings. This uses Pydantic's `env_nested_delimiter`, which allows defining nested
    variables such as: BEDROCK_MODELS__CLAUDE_3_5_SONNET__ARN to set the right nested setting
-2. Converting to and from the OpenAI spec
+2. Converting to and from the core schema format
 3. Implementing a subclass of BackendBase
 
 '''
