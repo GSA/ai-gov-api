@@ -9,11 +9,6 @@ https://platform.openai.com/docs/api-reference/chat
 This schema expresses this API as Pydantic classes and should be considered the source of truth
 of which parts of the Chap Completion API we support. 
 
-Other Providers will depend on this schema to convert to other backend formats.
-
-We probably won't be able to use the Chat Completion API as it since it offers features that are not 
-part of other provider APIs. For example, OpenAI has an `n` parameter to generate n completions. This
-is not supported by Bedrock's Converse API.
 """
 
 
