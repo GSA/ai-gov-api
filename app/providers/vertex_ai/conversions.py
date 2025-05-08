@@ -1,3 +1,5 @@
+import base64
+import binascii
 from datetime import datetime
 from typing import  List
 
@@ -11,7 +13,7 @@ from vertexai.generative_models import (
 
 from vertexai.language_models import TextEmbeddingInput
 
-from app.schema.open_ai import (
+from app.providers.open_ai.schemas import (
     ChatCompletionResponse,
     ChatCompletionResponseMessage,
     ChatCompletionChoice,
@@ -22,10 +24,12 @@ from app.schema.open_ai import (
     EmbeddingRequest,
     EmbeddingResponse,
     EmbeddingUsage,
-    EmbeddingData
+    EmbeddingData,
+    FileContentPart
 )
+from ..exceptions import InvalidBase64DataError
 
-from app.backends.utils import parse_data_uri
+from app.providers.utils import parse_data_uri
 
 log = structlog.get_logger()
 
@@ -71,7 +75,7 @@ def convert_open_ai_messages(messages: list[ChatCompletionMessage]) -> List[Cont
     vertex_history:List[Content] = []
     system_prompt_parts:List[Part]  = []
 
-    for openai_msg in messages:
+    for idx, openai_msg in enumerate(messages):
         if openai_msg.role == "system":
             # collect system messages which are addeds as a user message in vertex
             if isinstance(openai_msg.content, str):
@@ -91,20 +95,40 @@ def convert_open_ai_messages(messages: list[ChatCompletionMessage]) -> List[Cont
         elif isinstance(openai_msg.content, list):
             # Multimodal content list
             for part in openai_msg.content:
-                if isinstance(part, TextContentPart):
-                    if part.text.strip(): # Avoid empty blocks
-                        vertex_history.append(Content(role=vertex_role, parts=[Part.from_text(part.text)]))
-                elif isinstance(part, ImageContentPart):
-                    if part.image_url.url.startswith("data:image"):
+                match part:
+                    case TextContentPart(text=text):
+                        if text.strip(): # Avoid empty blocks
+                            vertex_history.append(Content(role=vertex_role, parts=[Part.from_text(text)]))
+                    case FileContentPart(file=file):
+                        base64_data = file.file_data
                         try:
-                            image_data = parse_data_uri(part.image_url.url)
+                            data=base64.b64decode(base64_data)
+                        except binascii.Error as e:
+                            raise InvalidBase64DataError(
+                                f"Invalid base64 encoding at message index '{idx}': {e}",
+                                field_name=part.type,
+                                 original_exception=e
+                            ) from e 
+                        document_part = Part.from_data(data=data, mime_type="application/pdf")
+                        vertex_history.append(Content(role=vertex_role, parts=[document_part]))
+
+                    case ImageContentPart(image_url=image_url):
+                        if image_url.url.startswith("data:image"):
+                            try:
+                                image_data = parse_data_uri(image_url.url)
+                            except binascii.Error as e:
+                                raise InvalidBase64DataError(
+                                    f"Invalid base64 encoding at message index '{idx}': {e}",
+                                    field_name=part.type,
+                                    original_exception=e
+                                ) from e 
                             image_part = Part.from_data(data=image_data['data'], mime_type=f"image/{image_data['format']}")
                             vertex_history.append(Content(role=vertex_role, parts=[image_part]))
-                        except ValueError as e:
-                            log.warning(f"Skipping image due to parsing error: {e}")
-                    else:
-                        # Let's not fetch images from the internet right now.
-                        log.warn(f"Warning: Skipping image with HTTPS URL ({part.image_url.url[:50]}...). Conversion only supports Base64 data URIs.")
+                        else:
+                            raise InvalidBase64DataError(
+                                f"Invalid base64 encoding at message index '{idx}': image ursl must begin with 'data:image'",
+                                field_name=part.type
+                            )
 
 
     if system_prompt_parts:

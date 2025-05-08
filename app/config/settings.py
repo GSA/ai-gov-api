@@ -2,11 +2,11 @@ from functools import lru_cache
 from typing import List
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from app.backends.base import Backend, LLMModel
-from app.backends.bedrock.bedrock import BedRockBackend
-from app.backends.vertex_ai.vertexai import VertexBackend
+from app.providers.base import Backend, LLMModel
+from app.providers.bedrock.bedrock import BedRockBackend
+from app.providers.vertex_ai.vertexai import VertexBackend
 
-# Register backends
+# Register Providers
 backend_instances: List[Backend]  = [
     BedRockBackend(),
     VertexBackend()

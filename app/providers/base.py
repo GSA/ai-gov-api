@@ -11,11 +11,11 @@ capabilities they have (currently just chat and embedding).
 from abc import ABC, abstractmethod
 from typing import Literal
 from pydantic import BaseModel
-from app.schema.open_ai import ChatCompletionRequest, ChatCompletionResponse, EmbeddingRequest
-
+from .core.chat_schema import ChatRequest, ChatRepsonse
+from .core.embed_schema import EmbedRequest
 class LLMModel(BaseModel):
     '''
-    Backends will have an assortment of models they support.
+    Providers will have an assortment of models they support.
     When the app starts it will look the backend's models property
     and expect a list of LLMModel objects. The id will be used in the
     API to select the model, and the capability will allow our
@@ -31,11 +31,11 @@ class Backend(ABC):
     Subclasses of this represent AI service provides like Bedrock and Vertex.
     '''
 
-    async def invoke_model(self, payload:ChatCompletionRequest) -> ChatCompletionResponse:
+    async def invoke_model(self, payload:ChatRequest) -> ChatRepsonse:
         """Handles chat completion requests. Raises NotImplementedError if not supported."""
         raise NotImplementedError(f"{self.__class__.__name__} does not support chat completions.")
 
-    async def embeddings(self, payload:EmbeddingRequest):
+    async def embeddings(self, payload:EmbedRequest):
         """Handles requests for embeddings. Raises NotImplementedError if not supported."""
         raise NotImplementedError(f"{self.__class__.__name__} does not support embeddings.")
 

@@ -1,14 +1,11 @@
-
 from datetime import datetime
 from typing import Optional, Union, List, get_args, cast
 
-
-from pydantic import ValidationError
 import structlog
 
-from app.backends.utils import parse_data_uri
+from app.providers.utils import parse_data_uri
 
-from app.schema.open_ai import (
+from app.providers.open_ai.schemas import (
     ChatCompletionMessage,
     ChatCompletionRequest,
     ChatCompletionResponse,
@@ -17,9 +14,10 @@ from app.schema.open_ai import (
     ChatCompletionUsage,
     TextContentPart,
     ImageContentPart,
+    FileContentPart,
     #EmbeddingRequest
 )
-
+from ..exceptions import InvalidBase64DataError, InputDataError
 from .converse_schemas import (
     Message,
     ContentBlock,
@@ -31,7 +29,10 @@ from .converse_schemas import (
     ImageSource,
     ConverseRequest,
     InferenceConfig,
-    ConverseResponse
+    ConverseResponse,
+    DocumentSource,
+    DocumentPayload,
+    ContentDocumentBlock
 )
 
 log = structlog.get_logger()
@@ -50,7 +51,7 @@ def convert_open_ai_messages(messages: list[ChatCompletionMessage]) -> tuple[Lis
     bedrock_messages = []
     bedrock_system_message: List[SystemContentBlock] | None = []
     
-    for openai_msg in messages:
+    for idx, openai_msg in enumerate(messages):
         if openai_msg.role == "system":
             # collect system messages which live at a level higher in bedrock
             if isinstance(openai_msg.content, str):
@@ -70,13 +71,29 @@ def convert_open_ai_messages(messages: list[ChatCompletionMessage]) -> tuple[Lis
         elif isinstance(openai_msg.content, list):
             # Multimodal content list
             for part in openai_msg.content:
-                if isinstance(part, TextContentPart):
-                    if part.text.strip(): # Avoid empty blocks
-                        bedrock_content_blocks.append(ContentTextBlock(text=part.text))
-                elif isinstance(part, ImageContentPart):
-                    if part.image_url.url.startswith("data:image"):
-                        try:
-                            image_data = parse_data_uri(part.image_url.url)
+                match part:
+                    case TextContentPart(text=text):
+                        if text.strip(): # Avoid empty blocks
+                            bedrock_content_blocks.append(ContentTextBlock(text=text))
+                    
+                    case FileContentPart(file=file):
+                        
+                        data_bytes = file.file_data
+                       
+                        doc_source = DocumentSource(bytes=data_bytes)
+                        payload = DocumentPayload(source=doc_source, name="test", format='pdf')
+                        bedrock_content_blocks.append(ContentDocumentBlock(document=payload))
+                    
+                    case ImageContentPart(image_url=image_url):
+                        if image_url.url.startswith("data:image"):
+                            try:
+                                image_data = parse_data_uri(image_url.url)
+                            except InputDataError as e:
+                                raise InvalidBase64DataError(
+                                    f"Invalid base64 encoding at message index '{idx}': {e}",
+                                    field_name=part.type,
+                                    original_exception=e
+                                ) from e 
                             # Validate format against Bedrock's Literal
                             format_annotation = ImagePayload.model_fields['format'].annotation
                             allowed_formats = get_args(format_annotation) 
@@ -87,14 +104,12 @@ def convert_open_ai_messages(messages: list[ChatCompletionMessage]) -> tuple[Lis
                             source = ImageSource(bytes=image_data["data"])
                             payload = ImagePayload(format=image_data["format"], source=source)
                             bedrock_content_blocks.append(ContentImageBlock(image=payload))
-                        except ValidationError as e:
-                             log.warning(f"skipping image due to validation error: {e}")
-                        except ValueError as e:
-                            log.warning(f"Skipping image due to parsing error: {e}")
-
-                    else:
-                        # Let's not fetch images from the internet right now.
-                        log.warn(f"Warning: Skipping image with HTTPS URL ({part.image_url.url[:50]}...). Conversion only supports Base64 data URIs.")
+                        
+                        else:
+                            raise InvalidBase64DataError(
+                                f"Invalid base64 encoding at message index '{idx}': image url must begin with 'data:image'",
+                                field_name=part.type
+                            )
        
         if bedrock_content_blocks:
             # Ensure role is valid for Bedrock Message

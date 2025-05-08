@@ -1,12 +1,15 @@
 from typing import List
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from app.auth.dependencies import RequiresScope, valid_api_key
 from app.auth.schemas import Scope
-from app.backends.base import LLMModel
-from app.backends.dependencies import Backend
+from app.providers.base import LLMModel
+from app.providers.dependencies import Backend
+from app.providers.exceptions import InputDataError
 from app.config.settings import get_settings
-from app.schema.open_ai import ChatCompletionRequest, ChatCompletionResponse, EmbeddingRequest
+from app.providers.open_ai.schemas import ChatCompletionRequest, ChatCompletionResponse, EmbeddingRequest, EmbeddingResponse
+from app.providers.open_ai.adapter_to_core import openai_chat_request_to_core, openai_embed_request_to_core
+from app.providers.open_ai.adapter_from_core import core_chat_response_to_openai, core_embed_response_to_openai
 
 router = APIRouter()
 
@@ -24,12 +27,24 @@ async def converse(
     api_key=Depends(RequiresScope([Scope.MODELS_INFERENCE])),
     backend=Depends(Backend('chat'))
 ) -> ChatCompletionResponse:
-    return await backend.invoke_model(req)
+    try:
+        core_req = openai_chat_request_to_core(req)
+        resp = await backend.invoke_model(core_req)
+        return core_chat_response_to_openai(resp)
+    except InputDataError as e:
+        error_detail = {"error": "Bad Request", "message": str(e)}
+        if e.field_name:
+            error_detail["field"] = e.field_name
+        raise HTTPException(status_code=400, detail=error_detail)
+
+
 
 @router.post("/embeddings")
 async def embeddings(
     req: EmbeddingRequest,
     api_key=Depends(RequiresScope([Scope.MODELS_EMBEDDING])),
     backend=Depends(Backend('embedding'))
-):
-    return  await backend.embeddings(req)
+) -> EmbeddingResponse:
+    core_req = openai_embed_request_to_core(req)
+    resp = await backend.embeddings(core_req)
+    return core_embed_response_to_openai(resp)

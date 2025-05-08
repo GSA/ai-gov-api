@@ -1,14 +1,15 @@
 from fastapi import HTTPException, Depends
 from app.config.settings import get_settings
-from app.schema.open_ai import ChatCompletionRequest
-from app.schema.open_ai import EmbeddingRequest
+from app.providers.open_ai.schemas import ChatCompletionRequest
+from app.providers.open_ai.schemas import EmbeddingRequest
+from app.providers.base import Backend as BackendBase
 
 class Backend:
     '''Dependency injection for routes'''
     def __init__(self, capability: str):
         self.capability = capability
 
-    def __call__(self, req: ChatCompletionRequest | EmbeddingRequest, settings=Depends(get_settings)):
+    def __call__(self, req: ChatCompletionRequest | EmbeddingRequest, settings=Depends(get_settings)) -> BackendBase:
         model_id = req.model
 
         backend, model = settings.backend_map.get(model_id, (None, None))
