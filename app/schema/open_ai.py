@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, confloat, ConfigDict, NonNegativeInt, field_serializer
+from pydantic import BaseModel, Field, confloat, ConfigDict, NonNegativeInt, field_serializer, Base64Bytes, PositiveInt
 from typing import Literal, Optional, Union, List, Annotated
 from datetime import datetime
 
@@ -30,7 +30,7 @@ class ImageUrl(BaseModel):
 class FileContent(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
-    file_data: str = Field(..., description="File data encoded as Base64 string")
+    file_data: Base64Bytes = Field(..., description="File data encoded as Base64 string")
     # these seem tied to OpenAI's file api. Most likely ignoring for now.
     file_id: Optional[str] = Field(default=None, description="The ID of an uploaded file to use as input")
     file_name: Optional[str] = Field(default=None, description="The name of the file, used when passing the file to the model as a string.")
@@ -58,13 +58,33 @@ class ImageContentPart(BaseModel):
 
 ContentPart = Union[TextContentPart, ImageContentPart, FileContentPart]
 
-class ChatCompletionMessage(BaseModel):
+class Message(BaseModel):
     model_config = ConfigDict(extra="ignore")
-    role: Literal["user", "assistant", "system"]  # for now exclude "function", "tool"
-    content: Union[str, List[ContentPart], None] = Field(description="The content of the message. Can be a string, a list of content parts (for multimodal input), or None (this is intended for tool calls).")
+
+class UserMessage(Message):
+    model_config = ConfigDict(extra="ignore")
+    role: Literal["user"] = "user"
+    content: Union[str, List[ContentPart]] = Field(description="The content of the message. Can be a string, a list of content parts (for multimodal input)")
+    name: Optional[str] = None
+
+class SystemMessage(Message):
+    model_config = ConfigDict(extra="ignore")
+    role: Literal["system"] 
+    content: Union[str, List[TextContentPart]] = Field(description="The content of the message for the system. Can be a string, a list of text parts")
     name: Optional[str] = None
 
 
+class AssistantMessage(Message):
+    model_config = ConfigDict(extra="ignore")
+    role: Literal["assistant"] 
+    # TODO: refusals
+    content: Union[str, List[TextContentPart]] = Field(description="The content of the message from the model. Can be a string, a list of text parts")
+    name: Optional[str] = None
+
+ChatCompletionMessage = Annotated[
+    Union[UserMessage, SystemMessage, AssistantMessage],
+    Field(discriminator="role")
+]
 class ChatCompletionRequest(BaseModel):
     model: str = Field(..., description="The model to use for chat completion")
     messages: List[ChatCompletionMessage] = Field(..., description="A list of messages from the conversation so far")
@@ -123,18 +143,18 @@ class ChatCompletionUsage(BaseModel):
 
 class ChatCompletionResponseMessage(BaseModel):
     """The LLM repsonse"""
-    role: Literal["assistant"]
+    role: Literal["assistant"] = "assistant"
     content: str
 
 class ChatCompletionChoice(BaseModel):
     index: NonNegativeInt
     message: ChatCompletionResponseMessage
-    finish_reason: Literal["stop"]
+    finish_reason: Optional[Literal["stop"]] = "stop"
 
 
 class ChatCompletionResponse(BaseModel):
     model_config = ConfigDict(extra="ignore")
-    object: Literal["chat.completion"]
+    object: Literal["chat.completion"] = "chat.completion"
     created: datetime
     model: str
     choices: List[ChatCompletionChoice]
@@ -169,7 +189,7 @@ class EmbeddingRequest(BaseModel):
         alias="encodingFormat", # deal with API's camelCase parameter
         description="The format to return the embeddings in. Currenly only 'float' is accepted."
     )
-    dimensions: Optional[int] = Field(
+    dimensions: Optional[PositiveInt] = Field(
         default=None,
         description="The number of dimensions the resulting output embeddings should have. Only supported in some models."
     )
@@ -203,7 +223,7 @@ class EmbeddingData(BaseModel):
     """
     A single embedding object within the response data array.
     """
-    object: Literal["embedding"] = Field(..., description="The object type, always 'embedding'.")
+    object: Optional[Literal["embedding"]] = Field(default="embedding", description="The object type, always 'embedding'.")
     embedding: Union[List[float], str] = Field(..., description="The embedding vector, which is a list of floats or a base64 string depending on 'encoding_format'.")
     index: int = Field(..., description="The index of the embedding in the list, corresponding to the input index.")
 
@@ -229,7 +249,7 @@ class EmbeddingResponse(BaseModel):
     Represents the successful response payload from the OpenAI Embeddings API.
     See: https://platform.openai.com/docs/api-reference/embeddings/create
     """
-    object: Literal["list"] = Field(..., description="The object type, typically 'list'.")
+    object: Optional[Literal["list"]] = Field(default="list", description="The object type, typically 'list'.")
     data: List[EmbeddingData] = Field(..., description="A list of embedding objects, one for each input.")
     model: str = Field(..., description="The ID of the model used for generating embeddings.")
     usage: EmbeddingUsage = Field(..., description="Usage statistics for the request.")

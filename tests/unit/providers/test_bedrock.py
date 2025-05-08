@@ -11,7 +11,6 @@ from app.providers.bedrock.converse_conversions import (
 
 from app.providers.exceptions import InvalidBase64DataError
 
-
 def test_convert_open_ai_request(bedrock_example, open_ai_example):
     '''Should convert a valid OpenAI ChatCompletion requests to a Bedrock Converse Request'''
     converted = convert_open_ai_completion_bedrock(open_ai_example)
@@ -54,23 +53,17 @@ def test_convert_open_ai_request_with_image(open_ai_example_image, expected_exc,
 
 
 @pytest.mark.parametrize(
-    ("open_ai_example_file", "expected_exc", "msg_part"),
+    ("open_ai_example_file", "msg_part"),
     [
-        pytest.param("abci23", InvalidBase64DataError, "Invalid base64 encoding"),
-        pytest.param(",abcd=", None, b'i\xb7\x1d'),
+        pytest.param("SGVsbG8=", b'Hello'),
     ], 
     indirect=("open_ai_example_file", ))
-def test_convert_open_ai_request_with_file(open_ai_example_file, expected_exc, msg_part):
+def test_convert_open_ai_request_with_file(open_ai_example_file, msg_part):
     ''' It should produce the correct bytes for good document formats or raise appropriate exception'''
-    if expected_exc is not None:
-        with pytest.raises(expected_exc) as exc_info:
-            convert_open_ai_completion_bedrock(open_ai_example_file)
-        assert msg_part in str(exc_info.value)
-    else:
-        converted = convert_open_ai_completion_bedrock(open_ai_example_file)
-        assert len(converted.messages) == 1
-        document_block:ContentDocumentBlock = cast(ContentDocumentBlock, converted.messages[0].content[0])
-        assert document_block.document.source.data == msg_part
+    converted = convert_open_ai_completion_bedrock(open_ai_example_file)
+    assert len(converted.messages) == 1
+    document_block:ContentDocumentBlock = cast(ContentDocumentBlock, converted.messages[0].content[0])
+    assert document_block.document.source.data == msg_part
 
 
 def test_convert_camel_case(open_ai_example):

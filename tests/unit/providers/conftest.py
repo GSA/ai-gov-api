@@ -10,22 +10,25 @@ from vertexai.generative_models import Part,Content
 
 from app.schema.open_ai import (
     ChatCompletionRequest,
-    ChatCompletionMessage,
+    SystemMessage,
+    UserMessage,
+    AssistantMessage,
     ImageContentPart,
     ImageUrl,
     FileContent,
     FileContentPart
 )
 
+from app.providers.core.chat_schema import ChatRequest, AssistantMessage as Core_AssistantMessage, UserMessage as Core_UserMessage, SystemMessage as Core_SystemMessage, TextPart
 
 @pytest.fixture(scope="module") 
 def open_ai_example_with_system():
     return ChatCompletionRequest(
         model="claude_3_5_sonnet",
         messages=[
-            ChatCompletionMessage(role="system", content="You speak only Pirate!"),
-            ChatCompletionMessage(role="user", content="Hello!"),
-            ChatCompletionMessage(role="system", content="You no longer speak only Pirate."),
+            SystemMessage(role="system", content="You speak only Pirate!"),
+            UserMessage(role="user", content="Hello!"),
+            SystemMessage(role="system", content="You no longer speak only Pirate."),
 
         ],
         temperature=0,
@@ -37,8 +40,8 @@ def open_ai_example():
     return ChatCompletionRequest(
         model="claude_3_5_sonnet",
         messages=[
-            ChatCompletionMessage(role="user", content="Hello!"),
-            ChatCompletionMessage(role="assistant", content="Hello! How can I assist you?")
+            UserMessage(role="user", content="Hello!"),
+            AssistantMessage(role="assistant", content="Hello! How can I assist you?")
         ],
         temperature=0,
         max_tokens=300
@@ -49,7 +52,7 @@ def open_ai_example_image(request):
     return ChatCompletionRequest(
         model="claude_3_5_sonnet",
         messages=[
-            ChatCompletionMessage(role="user", content=[
+            UserMessage(role="user", content=[
                 ImageContentPart(image_url=ImageUrl(url=request.param, detail="auto"))
             ])
         ],
@@ -62,13 +65,44 @@ def open_ai_example_file(request):
     return ChatCompletionRequest(
         model="claude_3_5_sonnet",
         messages=[
-            ChatCompletionMessage(role="user", content=[
+            UserMessage(role="user", content=[
                 FileContentPart(file=FileContent(file_data=request.param))
             ])
         ],
         temperature=0,
         max_tokens=300
 )
+
+@pytest.fixture(scope="module") 
+def core_request_basic():
+    return ChatRequest(
+        model='claude_3_5_sonnet',
+            messages=[
+                Core_UserMessage(role='user', content=[TextPart(type='text', text='Hello!')]), 
+                Core_AssistantMessage(role='assistant', content=[TextPart(type='text', text="Hello! How can I assist you?")])
+            ], 
+            temperature=0.0,
+            top_p=None,
+            max_tokens=300,
+            stream=False
+        )
+
+
+@pytest.fixture(scope="module") 
+def core_request_with_system():
+    return ChatRequest(
+        model='claude_3_5_sonnet',
+            messages=[
+                Core_SystemMessage(role='system', content=[TextPart(type='text', text='You speak only Pirate!')]),
+                Core_UserMessage(role='user', content=[TextPart(type='text', text='Hello!')]), 
+                Core_SystemMessage(role='system', content=[TextPart(type='text', text='You no longer speak only Pirate.')])
+            ], 
+            temperature=0.0,
+            top_p=None,
+            max_tokens=300,
+            stream=False
+        )
+
 @pytest.fixture(scope="module") 
 def bedrock_example():
     return ConverseRequest(
@@ -90,12 +124,11 @@ def vertex_history():
 @pytest.fixture(scope="module") 
 def vertex_system():
     return [
-        Content(role="user", parts=[
-            Part.from_text("You speak only Pirate!"),
-            Part.from_text("You no longer speak only Pirate.")
-        ]),
-        Content(role="model", parts=[Part.from_text("Okay")]),
-        Content(role="user", parts=[Part.from_text("Hello!")])
+        Content(role="user", parts=[Part.from_text("You speak only Pirate!")]),
+        Content(role="model", parts=[Part.from_text("Okay, I will follow these instructions.")]),
+        Content(role="user", parts=[Part.from_text("Hello!")]),
+        Content(role="user", parts=[Part.from_text("You no longer speak only Pirate.")]),
+        Content(role="model", parts=[Part.from_text("Okay, I will follow these instructions.")]),
     ]
 
 @pytest.fixture(scope="module")

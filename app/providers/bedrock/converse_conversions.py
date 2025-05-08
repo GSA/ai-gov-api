@@ -80,16 +80,9 @@ def convert_open_ai_messages(messages: list[ChatCompletionMessage]) -> tuple[Lis
                             bedrock_content_blocks.append(ContentTextBlock(text=text))
                     
                     case FileContentPart(file=file):
-                        base64_data = file.file_data
-                        try:
-                            data_bytes = base64.b64decode(base64_data)
-                        except binascii.Error as e:
-                            raise InvalidBase64DataError(
-                                f"Invalid base64 encoding at message index '{idx}': {e}",
-                                field_name=part.type,
-                                 original_exception=e
-                            ) from e 
                         
+                        data_bytes = file.file_data
+                       
                         doc_source = DocumentSource(bytes=data_bytes)
                         payload = DocumentPayload(source=doc_source, name="test", format='pdf')
                         bedrock_content_blocks.append(ContentDocumentBlock(document=payload))

@@ -1,18 +1,16 @@
-from app.providers.vertex_ai.conversions import convert_open_ai_messages
+from app.providers.adaptors.core_to_vertex import convert_core_messages
 
-def test_vertex_message_conversion(open_ai_example, vertex_history):
-    messages = convert_open_ai_messages(open_ai_example.messages)
-
-    ## Google doesn't implement __eq__ on their model objects ?!?
+def test_vertex_message_conversion(core_request_basic, vertex_history):
+    messages = convert_core_messages(core_request_basic.messages)
     assert all(converted.text == fixture.text 
-               for converted, fixture in zip(messages, vertex_history))
+                for converted, fixture in zip(messages, vertex_history))
     assert all(converted.role == fixture.role 
                for converted, fixture in zip(messages, vertex_history))
     
 
-def test_vertex_system_prompt_conversion(open_ai_example_with_system, vertex_system):
+def test_vertex_system_prompt_conversion(core_request_with_system, vertex_system):
     '''Vertex system prompts should be added as a user/model pair to the beginning'''
-    messages = convert_open_ai_messages(open_ai_example_with_system.messages)
+    messages = convert_core_messages(core_request_with_system.messages)
     assert all(converted.role == fixture.role 
               for converted, fixture in zip(messages, vertex_system))
     assert all(converted.text == fixture.text 

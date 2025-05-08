@@ -7,8 +7,9 @@ from app.providers.base import LLMModel
 from app.providers.dependencies import Backend
 from app.providers.exceptions import InputDataError
 from app.config.settings import get_settings
-from app.schema.open_ai import ChatCompletionRequest, ChatCompletionResponse, EmbeddingRequest
-
+from app.schema.open_ai import ChatCompletionRequest, ChatCompletionResponse, EmbeddingRequest, EmbeddingResponse
+from app.providers.adaptors.open_ai_to_core import openai_chat_request_to_core, openai_embed_request_to_core
+from app.providers.adaptors.core_to_openai import core_chat_response_to_openai, core_embed_response_to_openai
 
 router = APIRouter()
 
@@ -27,7 +28,9 @@ async def converse(
     backend=Depends(Backend('chat'))
 ) -> ChatCompletionResponse:
     try:
-        return await backend.invoke_model(req)
+        core_req = openai_chat_request_to_core(req)
+        resp = await backend.invoke_model(core_req)
+        return core_chat_response_to_openai(resp)
     except InputDataError as e:
         error_detail = {"error": "Bad Request", "message": str(e)}
         if e.field_name:
@@ -41,5 +44,7 @@ async def embeddings(
     req: EmbeddingRequest,
     api_key=Depends(RequiresScope([Scope.MODELS_EMBEDDING])),
     backend=Depends(Backend('embedding'))
-):
-    return  await backend.embeddings(req)
+) -> EmbeddingResponse:
+    core_req = openai_embed_request_to_core(req)
+    resp = await backend.embeddings(core_req)
+    return core_embed_response_to_openai(resp)
