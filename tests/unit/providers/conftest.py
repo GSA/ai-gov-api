@@ -10,7 +10,7 @@ from app.providers.core.chat_schema import (
     Response,
     CompletionUsage
 )
-from app.providers.core.embed_schema import EmbedRequest, EmbeddingResponse, EmbeddingData, EmbeddingUsage
+from app.providers.core.embed_schema import EmbeddingRequest, EmbeddingResponse, EmbeddingData, EmbeddingUsage
 
 @pytest.fixture
 def core_chat_request():
@@ -53,7 +53,7 @@ def core_chat_reponse():
 
 @pytest.fixture
 def core_embed_request():
-    return EmbedRequest(
+    return EmbeddingRequest(
         input = ["this is a test", "something else"],
         model = "test_model",
         encoding_format="float",

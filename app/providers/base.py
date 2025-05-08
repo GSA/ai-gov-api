@@ -12,7 +12,7 @@ from abc import ABC, abstractmethod
 from typing import Literal
 from pydantic import BaseModel
 from .core.chat_schema import ChatRequest, ChatRepsonse
-from .core.embed_schema import EmbedRequest
+from .core.embed_schema import EmbeddingRequest
 class LLMModel(BaseModel):
     '''
     Providers will have an assortment of models they support.
@@ -35,7 +35,7 @@ class Backend(ABC):
         """Handles chat completion requests. Raises NotImplementedError if not supported."""
         raise NotImplementedError(f"{self.__class__.__name__} does not support chat completions.")
 
-    async def embeddings(self, payload:EmbedRequest):
+    async def embeddings(self, payload:EmbeddingRequest):
         """Handles requests for embeddings. Raises NotImplementedError if not supported."""
         raise NotImplementedError(f"{self.__class__.__name__} does not support embeddings.")
 

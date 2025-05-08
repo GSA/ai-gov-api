@@ -10,8 +10,8 @@ from ..core.chat_schema import (
     ImagePart,
     FilePart,
 )
-from ..core.embed_schema import EmbedRequest as CoreEmbedRequest
-from .schemas import EmbedRequest
+from ..core.embed_schema import EmbeddingRequest as CoreEmbedRequest
+from .schemas import EmbeddingRequest
 
 @singledispatch
 def _part_to_vtx(part) -> Part:
@@ -50,7 +50,7 @@ def convert_core_messages(messages: Sequence[Message]) -> List[Content]:
     return vertex_history
 
 
-def convert_embedding_request(req: CoreEmbedRequest) -> EmbedRequest:
+def convert_embedding_request(req: CoreEmbedRequest) -> EmbeddingRequest:
 
     type_map = {
         "search_document": "RETRIEVAL_DOCUMENT",
@@ -62,7 +62,7 @@ def convert_embedding_request(req: CoreEmbedRequest) -> EmbedRequest:
 
     input_type = type_map.get(req.input_type) if req.input_type is not None else None
 
-    return EmbedRequest(
+    return EmbeddingRequest(
         auto_truncate =True,
         output_dimensionality=req.dimensions,
         texts = [

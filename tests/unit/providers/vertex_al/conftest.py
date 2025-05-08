@@ -1,5 +1,5 @@
 import pytest
-from app.providers.vertex_ai.schemas import EmbedRequest, TextEmbeddingInput
+from app.providers.vertex_ai.schemas import EmbeddingRequest, TextEmbeddingInput
 from vertexai.generative_models import Part,Content, GenerationResponse
 from vertexai.language_models import TextEmbedding
 from vertexai.language_models._language_models import TextEmbeddingStatistics
@@ -41,7 +41,7 @@ def vertex_chat_response():
 
 @pytest.fixture()
 def vertex_embed_request():
-    return EmbedRequest(
+    return EmbeddingRequest(
         texts = [
             TextEmbeddingInput(text="this is a test", task_type="RETRIEVAL_DOCUMENT"),
             TextEmbeddingInput(text="something else", task_type="RETRIEVAL_DOCUMENT")

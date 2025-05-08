@@ -1,7 +1,17 @@
 from typing import List, cast, Sequence
 from functools import singledispatch
-from ..core.chat_schema import ChatRequest, ContentPart, Message,SystemMessage,AssistantMessage, UserMessage, TextPart, ImagePart, FilePart
-from ..core.embed_schema import EmbedRequest
+from ..core.chat_schema import (
+    ChatRequest,
+    ContentPart,
+    Message,
+    SystemMessage,
+    AssistantMessage,
+    UserMessage,
+    TextPart,
+    ImagePart,
+    FilePart
+)
+from ..core.embed_schema import EmbeddingRequest
 import app.providers.open_ai.schemas as OA 
 from app.providers.utils import parse_data_uri
 
@@ -73,8 +83,8 @@ def openai_chat_request_to_core(req: OA.ChatCompletionRequest) -> ChatRequest:
     )
 
 
-def openai_embed_request_to_core(req: OA.EmbeddingRequest) -> EmbedRequest:
-    return EmbedRequest(
+def openai_embed_request_to_core(req: OA.EmbeddingRequest) -> EmbeddingRequest:
+    return EmbeddingRequest(
         model=req.model,
         input=[req.input] if isinstance(req.input, str) else req.input,
         encoding_format=req.encoding_format,

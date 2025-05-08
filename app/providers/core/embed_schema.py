@@ -1,7 +1,7 @@
 from typing import List, Literal, Optional
 from pydantic import BaseModel
 
-class EmbedRequest(BaseModel):
+class EmbeddingRequest(BaseModel):
     model: str
     input: List[str]
     encoding_format: Literal['float']

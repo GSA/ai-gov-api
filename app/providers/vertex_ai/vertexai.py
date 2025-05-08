@@ -6,7 +6,7 @@ import structlog
 import vertexai
 from vertexai.generative_models import GenerativeModel, GenerationConfig
 from vertexai.language_models import TextEmbeddingModel, TextEmbedding
-from ..core.embed_schema import EmbedRequest
+from ..core.embed_schema import EmbeddingRequest
 
 from app.providers.base import Backend, LLMModel
 from ..core.chat_schema import ChatRequest, ChatRepsonse
@@ -78,7 +78,7 @@ class VertexBackend(Backend):
         return convert_chat_vertex_response(response, model=model_id)
   
     # https://cloud.google.com/vertex-ai/generative-ai/docs/model-reference/text-embeddings-api
-    async def embeddings(self, payload: EmbedRequest): 
+    async def embeddings(self, payload: EmbeddingRequest): 
         model = TextEmbeddingModel.from_pretrained(payload.model)
         req = convert_embedding_request(payload)
         # vertex is fussy with types: model_dump() converts the TextEmbeddingInput to dicts

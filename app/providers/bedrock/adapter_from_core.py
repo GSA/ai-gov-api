@@ -11,7 +11,7 @@ from ..core.chat_schema import (
     ImagePart,
     FilePart
 )
-from ..core.embed_schema import EmbedRequest
+from ..core.embed_schema import EmbeddingRequest
 
 import app.providers.bedrock.converse_schemas as br 
 from app.providers.bedrock.cohere_embedding_schemas import CohereRequest
@@ -89,7 +89,7 @@ def core_to_bedrock(req: ChatRequest) -> br.ConverseRequest:
     )
 
 
-def core_embed_request_to_bedrock(req: EmbedRequest) -> CohereRequest:
+def core_embed_request_to_bedrock(req: EmbeddingRequest) -> CohereRequest:
     return CohereRequest(
         model=req.model,
         texts=req.input,
