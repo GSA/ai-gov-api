@@ -1,17 +1,17 @@
 from functools import singledispatch
-from typing import List, Sequence
+from typing import List
 
 from vertexai.language_models import TextEmbeddingInput
-from vertexai.generative_models import Part, Content
+from vertexai.generative_models import Part, Content, GenerationConfig
 from ..core.chat_schema import (
-    Message,
     SystemMessage,
     TextPart,
     ImagePart,
-    FilePart,
+    FilePart
 )
 from ..core.embed_schema import EmbeddingRequest as CoreEmbedRequest
-from .schemas import EmbeddingRequest
+from ..core.chat_schema import ChatRequest
+from .schemas import EmbeddingRequest, VertexGenerateRequest
 
 @singledispatch
 def _part_to_vtx(part) -> Part:
@@ -30,10 +30,10 @@ def _(part: FilePart) -> Part:
     return Part.from_data(data=part.bytes_, mime_type="application/pdf")
     
 
-def convert_core_messages(messages: Sequence[Message]) -> List[Content]:
+def convert_chat_request(req: ChatRequest) -> VertexGenerateRequest:
     vertex_history:List[Content] = []
 
-    for idx, message in enumerate(messages):
+    for idx, message in enumerate(req.messages):
         vertex_role = "model" if message.role == "assistant" else message.role
   
         if isinstance(message, SystemMessage):
@@ -47,7 +47,17 @@ def convert_core_messages(messages: Sequence[Message]) -> List[Content]:
         for part in message.content:
             vertex_history.append(Content(role=vertex_role,parts=[_part_to_vtx(part)]))
 
-    return vertex_history
+    return VertexGenerateRequest(
+        contents=vertex_history,
+        generation_config=GenerationConfig(
+            temperature=req.temperature,
+            max_output_tokens=req.max_tokens,
+            top_p=req.top_p,
+            stop_sequences=req.stop,
+            #candidate_count=req.n #  we could put OpenAI's n paramter here if we wanted to
+            # but it's not available on Bedrock
+            )
+        )
 
 
 def convert_embedding_request(req: CoreEmbedRequest) -> EmbeddingRequest:

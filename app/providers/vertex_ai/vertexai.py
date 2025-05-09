@@ -4,13 +4,13 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 import structlog
 
 import vertexai
-from vertexai.generative_models import GenerativeModel, GenerationConfig
+from vertexai.generative_models import GenerativeModel
 from vertexai.language_models import TextEmbeddingModel, TextEmbedding
 from ..core.embed_schema import EmbeddingRequest
 
 from app.providers.base import Backend, LLMModel
 from ..core.chat_schema import ChatRequest, ChatRepsonse
-from .adapter_from_core import convert_core_messages, convert_embedding_request
+from .adapter_from_core import convert_chat_request, convert_embedding_request
 from .adapter_to_core import convert_chat_vertex_response, vertex_embed_reposonse_to_core
 
 log = structlog.get_logger()
@@ -45,7 +45,6 @@ class VertexBackend(Backend):
         vertex_project_id:str = Field(default=...)
         vertex_models:VertexModelsSettings = VertexModelsSettings()
 
-    
     def __init__(self):
         self.settings = self.Settings()
         vertexai.init(project=self.settings.vertex_project_id, location="us-central1")
@@ -59,21 +58,8 @@ class VertexBackend(Backend):
         model_id = payload.model
         model = GenerativeModel(model_id)
     
-        vertex_history = convert_core_messages(payload.messages)
-
-        generation_config = GenerationConfig(
-            temperature=payload.temperature,
-            max_output_tokens=payload.max_tokens,
-            top_p=payload.top_p,
-            stop_sequences=payload.stop,
-            # candidate_count=payload.n #  we could put OpenAI's n paramter here if we wanted to
-            # but it's not available on Bedrock
-        )
- 
-        response = await model.generate_content_async(
-            vertex_history,
-            generation_config=generation_config
-        )
+        vertex_req = convert_chat_request(payload)
+        response = await model.generate_content_async(**dict(vertex_req))
         
         return convert_chat_vertex_response(response, model=model_id)
   
