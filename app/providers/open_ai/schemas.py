@@ -81,6 +81,19 @@ ChatCompletionMessage = Annotated[
     Field(discriminator="role")
 ]
 class ChatCompletionRequest(BaseModel):
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "model": "gemini-2.0-flash",
+                    "messages": [
+                        {"role": "system","content": "You speak only pirate"},
+                        {"role": "user","content": "Hello!"}
+                    ]   
+                }
+            ]
+        }
+    }
     model: str = Field(..., description="The model to use for chat completion")
     messages: Sequence[ChatCompletionMessage] = Field(..., description="A list of messages from the conversation so far")
    
@@ -159,14 +172,14 @@ class ChatCompletionResponse(BaseModel):
     def serialize_dt(self, created: datetime, _info):
         return int(created.timestamp())
 
-### Embedding Requests Models ###
-# This is not used at the moment — it's not clear how to convert to Bedrock's Cohere model
 
+### Embedding Requests Model ###
 class EmbeddingRequest(BaseModel):
     """
     Represents the request payload for the OpenAI Embeddings API.
     Reference: https://platform.openai.com/docs/api-reference/embeddings/create
     """
+ 
     input: Union[str, List[str]] = Field(
         ..., 
         description="Input text to embed, encoded as a string or array of strings. Each input must not exceed the max input tokens for the model."
@@ -208,7 +221,17 @@ class EmbeddingRequest(BaseModel):
     )
     model_config = ConfigDict(
         populate_by_name=True, 
-        extra='ignore' 
+        extra='ignore',
+        json_schema_extra={
+            "examples": [
+                {
+                    "input": "Narcotics cannot still the Tooth That nibbles at the soul",
+                    "model": "cohere_english_v3",
+                    "encodingFormat": "float",
+                    "input_type": "search_document"
+                }
+            ]
+        }
     )
   
 
@@ -255,16 +278,3 @@ class EmbeddingResponse(BaseModel):
         extra='ignore'
     )
    
-
-# Bedrock does not have a unified embedding API and the Cohere request format
-# has input_type, which is not part of the OpenAI api.
-# This means at the moment we don't have a canonical interface for embeddings.
-# For now, just use cohere
-# https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-embed.html
-
-class CohereRequest(BaseModel):
-    model: str = Field(..., exclude=True)
-    texts: List[str] = Field(..., min_length=0, max_length=96)
-    input_type: Literal["search_document", "search_query", "classification", "clustering"]
-    truncate: Literal["NONE", "START", "END"] = "NONE"
-    embedding_types: List[Literal["float", "int8", "uint8", "binary", "ubinary"]] = ["float"]
