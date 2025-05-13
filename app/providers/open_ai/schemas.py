@@ -1,5 +1,5 @@
-from pydantic import BaseModel, Field, confloat, ConfigDict, NonNegativeInt, field_serializer
-from typing import Literal, Optional, Union, List, Annotated
+from pydantic import BaseModel, Field, confloat, ConfigDict, NonNegativeInt, field_serializer, Base64Bytes, PositiveInt
+from typing import Literal, Optional, Union, List, Annotated, Sequence
 from datetime import datetime
 
 """
@@ -9,11 +9,6 @@ https://platform.openai.com/docs/api-reference/chat
 This schema expresses this API as Pydantic classes and should be considered the source of truth
 of which parts of the Chap Completion API we support. 
 
-Other backends will depend on this schema to convert to other backend formats.
-
-We probably won't be able to use the Chat Completion API as it since it offers features that are not 
-part of other provider APIs. For example, OpenAI has an `n` parameter to generate n completions. This
-is not supported by Bedrock's Converse API.
 """
 
 
@@ -27,12 +22,27 @@ class ImageUrl(BaseModel):
     url: str = Field(..., description="The base64 encoded image data URI.")
     detail: Optional[Literal["auto", "low", "high"]] = Field("auto", description="Specifies the detail level of the image.")
 
+class FileContent(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    file_data: Base64Bytes = Field(..., description="File data encoded as Base64 string")
+    # these seem tied to OpenAI's file api. Most likely ignoring for now.
+    file_id: Optional[str] = Field(default=None, description="The ID of an uploaded file to use as input")
+    file_name: Optional[str] = Field(default=None, description="The name of the file, used when passing the file to the model as a string.")
+
+
 class TextContentPart(BaseModel):
     """Represents a text part in a multimodal content list."""
     model_config = ConfigDict(extra="ignore")
 
     type: Literal["text"] = "text"
     text: str
+
+class FileContentPart(BaseModel):
+    """Represents a file"""
+    model_config = ConfigDict(extra="ignore")
+    type: Literal["file"] = "file"
+    file: FileContent
 
 class ImageContentPart(BaseModel):
     """Represents an image part in a multimodal content list."""
@@ -41,18 +51,51 @@ class ImageContentPart(BaseModel):
     type: Literal["image_url"] = "image_url"
     image_url: ImageUrl
 
-ContentPart = Union[TextContentPart, ImageContentPart]
+ContentPart = Union[TextContentPart, ImageContentPart, FileContentPart]
 
-class ChatCompletionMessage(BaseModel):
+class Message(BaseModel):
     model_config = ConfigDict(extra="ignore")
-    role: Literal["user", "assistant", "system"]  # for now exclude "function", "tool"
-    content: Union[str, List[ContentPart], None] = Field(description="The content of the message. Can be a string, a list of content parts (for multimodal input), or None (this is intended for tool calls).")
+
+class UserMessage(Message):
+    model_config = ConfigDict(extra="ignore")
+    role: Literal["user"] = "user"
+    content: Union[str, Sequence[ContentPart]] = Field(description="The content of the message. Can be a string, a list of content parts (for multimodal input)")
+    name: Optional[str] = None
+
+class SystemMessage(Message):
+    model_config = ConfigDict(extra="ignore")
+    role: Literal["system"] = "system"
+    content: Union[str, Sequence[TextContentPart]] = Field(description="The content of the message for the system. Can be a string, a list of text parts")
     name: Optional[str] = None
 
 
+class AssistantMessage(Message):
+    model_config = ConfigDict(extra="ignore")
+    role: Literal["assistant"] = "assistant" 
+    # TODO: refusals
+    content: Union[str, Sequence[TextContentPart]] = Field(description="The content of the message from the model. Can be a string, a list of text parts")
+    name: Optional[str] = None
+
+ChatCompletionMessage = Annotated[
+    Union[UserMessage, SystemMessage, AssistantMessage],
+    Field(discriminator="role")
+]
 class ChatCompletionRequest(BaseModel):
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "model": "gemini-2.0-flash",
+                    "messages": [
+                        {"role": "system","content": "You speak only pirate"},
+                        {"role": "user","content": "Hello!"}
+                    ]   
+                }
+            ]
+        }
+    }
     model: str = Field(..., description="The model to use for chat completion")
-    messages: List[ChatCompletionMessage] = Field(..., description="A list of messages from the conversation so far")
+    messages: Sequence[ChatCompletionMessage] = Field(..., description="A list of messages from the conversation so far")
    
     temperature: Optional[Annotated[float, confloat(ge=0, le=2)]] = Field(
         default=None,
@@ -108,18 +151,18 @@ class ChatCompletionUsage(BaseModel):
 
 class ChatCompletionResponseMessage(BaseModel):
     """The LLM repsonse"""
-    role: Literal["assistant"]
+    role: Literal["assistant"] = "assistant"
     content: str
 
 class ChatCompletionChoice(BaseModel):
     index: NonNegativeInt
     message: ChatCompletionResponseMessage
-    finish_reason: Literal["stop"]
+    finish_reason: Optional[Literal["stop"]] = "stop"
 
 
 class ChatCompletionResponse(BaseModel):
     model_config = ConfigDict(extra="ignore")
-    object: Literal["chat.completion"]
+    object: Literal["chat.completion"] = "chat.completion"
     created: datetime
     model: str
     choices: List[ChatCompletionChoice]
@@ -129,14 +172,14 @@ class ChatCompletionResponse(BaseModel):
     def serialize_dt(self, created: datetime, _info):
         return int(created.timestamp())
 
-### Embedding Requests Models ###
-# This is not used at the moment — it's not clear how to convert to Bedrock's Cohere model
 
+### Embedding Requests Model ###
 class EmbeddingRequest(BaseModel):
     """
     Represents the request payload for the OpenAI Embeddings API.
     Reference: https://platform.openai.com/docs/api-reference/embeddings/create
     """
+ 
     input: Union[str, List[str]] = Field(
         ..., 
         description="Input text to embed, encoded as a string or array of strings. Each input must not exceed the max input tokens for the model."
@@ -154,7 +197,7 @@ class EmbeddingRequest(BaseModel):
         alias="encodingFormat", # deal with API's camelCase parameter
         description="The format to return the embeddings in. Currenly only 'float' is accepted."
     )
-    dimensions: Optional[int] = Field(
+    dimensions: Optional[PositiveInt] = Field(
         default=None,
         description="The number of dimensions the resulting output embeddings should have. Only supported in some models."
     )
@@ -178,7 +221,17 @@ class EmbeddingRequest(BaseModel):
     )
     model_config = ConfigDict(
         populate_by_name=True, 
-        extra='ignore' 
+        extra='ignore',
+        json_schema_extra={
+            "examples": [
+                {
+                    "input": "Narcotics cannot still the Tooth That nibbles at the soul",
+                    "model": "cohere_english_v3",
+                    "encodingFormat": "float",
+                    "input_type": "search_document"
+                }
+            ]
+        }
     )
   
 
@@ -188,7 +241,7 @@ class EmbeddingData(BaseModel):
     """
     A single embedding object within the response data array.
     """
-    object: Literal["embedding"] = Field(..., description="The object type, always 'embedding'.")
+    object: Optional[Literal["embedding"]] = Field(default="embedding", description="The object type, always 'embedding'.")
     embedding: Union[List[float], str] = Field(..., description="The embedding vector, which is a list of floats or a base64 string depending on 'encoding_format'.")
     index: int = Field(..., description="The index of the embedding in the list, corresponding to the input index.")
 
@@ -214,7 +267,7 @@ class EmbeddingResponse(BaseModel):
     Represents the successful response payload from the OpenAI Embeddings API.
     See: https://platform.openai.com/docs/api-reference/embeddings/create
     """
-    object: Literal["list"] = Field(..., description="The object type, typically 'list'.")
+    object: Optional[Literal["list"]] = Field(default="list", description="The object type, typically 'list'.")
     data: List[EmbeddingData] = Field(..., description="A list of embedding objects, one for each input.")
     model: str = Field(..., description="The ID of the model used for generating embeddings.")
     usage: EmbeddingUsage = Field(..., description="Usage statistics for the request.")
@@ -225,16 +278,3 @@ class EmbeddingResponse(BaseModel):
         extra='ignore'
     )
    
-
-# Bedrock does not have a unified embedding API and the Cohere request format
-# has input_type, which is not part of the OpenAI api.
-# This means at the moment we don't have a canonical interface for embeddings.
-# For now, just use cohere
-# https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-embed.html
-
-class CohereRequest(BaseModel):
-    model: str = Field(..., exclude=True)
-    texts: List[str] = Field(..., min_length=0, max_length=96)
-    input_type: Literal["search_document", "search_query", "classification", "clustering"]
-    truncate: Literal["NONE", "START", "END"] = "NONE"
-    embedding_types: List[Literal["float", "int8", "uint8", "binary", "ubinary"]] = ["float"]

@@ -6,7 +6,7 @@ These are the source and destination for conversions to and from
 the OpenAI embedding API format.
 '''
 
-from typing import List, Literal, Any, get_args
+from typing import List, Literal, Any, get_args, Optional, Dict
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -31,3 +31,17 @@ class CohereRequest(BaseModel):
             return v 
         else:
             return default_value 
+
+
+class CohereImageDscription(BaseModel):
+    width: int
+    height: int
+    format: str
+    bit_depth: int
+
+class CohereRepsonse(BaseModel):
+    embeddings: Dict[str, List[List[float]]]
+    id: str
+    response_type: str
+    texts: List[str]
+    images: Optional[List[CohereImageDscription]] = None

@@ -1,21 +1,20 @@
 '''
-backends.bedrock
+Provider.bedrock
 ~~~~~~~~~~~~~~~~
 
-This module is responsible for accepting requests in the form of OpenAI Chat Completions, 
+This module is responsible for accepting requests in the form of the Core API Model, 
 interacting with various bedrock models, and returning an well-formed response.
 
-It has thee part:
+It has three part:
 
 1. Getting its settings. This uses Pydantic's `env_nested_delimiter`, which allows defining nested
    variables such as: BEDROCK_MODELS__CLAUDE_3_5_SONNET__ARN to set the right nested setting
-2. Converting to and from the OpenAI spec
+2. Converting to and from the core schema format
 3. Implementing a subclass of BackendBase
 
 '''
 
 
-import json
 import structlog
 from typing import  Literal
 
@@ -26,15 +25,13 @@ from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-from app.schema.open_ai import ChatCompletionRequest, EmbeddingRequest
-from app.backends.base import Backend, LLMModel
-
-from .converse_conversions import (
-    convert_open_ai_completion_bedrock, 
-    convert_bedrock_response_open_ai
-)
+from app.providers.base import Backend, LLMModel
+from .adapter_from_core import core_to_bedrock, core_embed_request_to_bedrock
+from .adapter_to_core import bedrock_chat_response_to_core, bedorock_embed_reposonse_to_core
+from ..core.chat_schema import ChatRequest, ChatRepsonse
+from ..core.embed_schema import EmbeddingResponse, EmbeddingRequest
 from .converse_schemas import ConverseResponse
-from .cohere_embedding_conversions import convert_openai_request, convert_openai_repsonse
+from .cohere_embedding_schemas import CohereRepsonse
 
 log = structlog.get_logger()
 
@@ -117,8 +114,8 @@ class BedRockBackend(Backend):
         return [LLMModel(**v) for v in self.settings.bedrock_models.model_dump().values()]
 
 
-    async def invoke_model(self, payload: ChatCompletionRequest):
-        converted = convert_open_ai_completion_bedrock(payload)
+    async def invoke_model(self, payload: ChatRequest) -> ChatRepsonse:
+        converted = core_to_bedrock(payload)
         session = aioboto3.Session()
         async with session.client("bedrock-runtime", config=self.retry_config) as client:
             body = converted.model_dump(exclude_none=True, by_alias=True)
@@ -129,11 +126,11 @@ class BedRockBackend(Backend):
             log.info("bedrock metrics", model=converted.model_id, **response['metrics'])
         
             res = ConverseResponse(**response)
-            return convert_bedrock_response_open_ai(res)
+            return bedrock_chat_response_to_core(res, model=converted.model_id)
 
 
-    async def embeddings(self, payload: EmbeddingRequest): 
-        converted = convert_openai_request(payload)
+    async def embeddings(self, payload: EmbeddingRequest) -> EmbeddingResponse: 
+        converted = core_embed_request_to_bedrock(payload)
         body = converted.model_dump_json(exclude_none=True)
         modelId = getattr(self.settings.bedrock_models, payload.model).arn 
 
@@ -147,11 +144,13 @@ class BedRockBackend(Backend):
                 accept = '*/*',
                 contentType = 'application/json'
                 )
-            print("meta:", response['ResponseMetadata'])
 
             headers = response['ResponseMetadata']['HTTPHeaders']
             latency = headers['x-amzn-bedrock-invocation-latency']
             token_count = headers['x-amzn-bedrock-input-token-count']
             log.info("embedding", latency=latency, model=modelId)
-            response_body = json.loads(await response.get("body").read())
-            return convert_openai_repsonse(response_body, token_count, modelId)
+            resp = await response.get("body").read()
+
+            resp = CohereRepsonse.model_validate_json(resp)
+
+            return bedorock_embed_reposonse_to_core(model=modelId, resp=resp, token_count=token_count)

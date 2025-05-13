@@ -1,7 +1,8 @@
 import base64
 import pytest
 
-from app.backends.utils import parse_data_uri
+from app.providers.utils import parse_data_uri
+from app.providers.exceptions import InvalidBase64DataError, InvalidImageURLError
 
 
 def test_convert_base64_image_to_bytes():
@@ -23,7 +24,7 @@ def test_raises_unsupported_file_type():
     base_64 = base64.b64encode(original_bytes).decode()
     image_uri = f"data:image/tif;base64,{base_64}"
 
-    with pytest.raises(ValueError) as exc_info:
+    with pytest.raises(InvalidImageURLError) as exc_info:
         parse_data_uri(image_uri)
     assert "Invalid or unsupported image data URI format." in str(exc_info.value)
 
@@ -33,6 +34,6 @@ def test_raises_bad_base64_type():
     bad_base64 = "ABCXYZ"
     image_uri = f"data:image/jpeg;base64,{bad_base64}"
 
-    with pytest.raises(ValueError) as exc_info:
+    with pytest.raises(InvalidBase64DataError) as exc_info:
         parse_data_uri(image_uri)
     assert "Invalid Base64 data: Incorrect padding" == str(exc_info.value)
