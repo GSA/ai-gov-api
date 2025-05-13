@@ -34,6 +34,16 @@ class VertexModelsSettings(BaseSettings):
         id="gemini-2.0-flash",
         capability="chat"
     )
+    gemini_2_0_flash_light:VertexModel = VertexModel(
+        name="Gemini 2.0 Flash Light",
+        id="gemini-2.0-flash-lite",
+        capability="chat"
+    )
+    gemini_2_5_pro:VertexModel = VertexModel(
+        name="Gemini 2.5 Pro",
+        id="gemini-2.5-pro-preview-05-06",
+        capability="chat"
+    )
     text_embedding_005:VertexModel = VertexModel(
         name="Text embedding 005",
         id="text-embedding-005",
