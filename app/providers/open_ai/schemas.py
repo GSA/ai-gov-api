@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, confloat, ConfigDict, NonNegativeInt, field_serializer, Base64Bytes, PositiveInt
+from pydantic import BaseModel, Field, confloat, ConfigDict, NonNegativeInt, field_serializer, Base64Bytes, PositiveInt, StringConstraints
 from typing import Literal, Optional, Union, List, Annotated, Sequence
 from datetime import datetime
 
@@ -11,7 +11,10 @@ of which parts of the Chap Completion API we support.
 
 """
 
-
+non_empty_string = Annotated[
+        str,
+        StringConstraints(strip_whitespace=True, min_length=1)
+    ]
 class ImageUrl(BaseModel):
     """
     Defines the structure for an image URL input.
@@ -36,7 +39,7 @@ class TextContentPart(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     type: Literal["text"] = "text"
-    text: str
+    text: non_empty_string
 
 class FileContentPart(BaseModel):
     """Represents a file"""
@@ -59,7 +62,7 @@ class Message(BaseModel):
 class UserMessage(Message):
     model_config = ConfigDict(extra="ignore")
     role: Literal["user"] = "user"
-    content: Union[str, Sequence[ContentPart]] = Field(description="The content of the message. Can be a string, a list of content parts (for multimodal input)")
+    content: Union[non_empty_string, Sequence[ContentPart]] = Field(description="The content of the message. Can be a string, a list of content parts (for multimodal input)")
     name: Optional[str] = None
 
 class SystemMessage(Message):

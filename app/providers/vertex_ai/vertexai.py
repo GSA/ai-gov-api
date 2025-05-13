@@ -4,10 +4,12 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 import structlog
 
 import vertexai
+from google.api_core import exceptions as core_exceptions
 from vertexai.generative_models import GenerativeModel
 from vertexai.language_models import TextEmbeddingModel, TextEmbedding
 from ..core.embed_schema import EmbeddingRequest
 
+from app.providers.exceptions import InvalidInput
 from app.providers.base import Backend, LLMModel
 from ..core.chat_schema import ChatRequest, ChatRepsonse
 from .adapter_from_core import convert_chat_request, convert_embedding_request
@@ -59,7 +61,10 @@ class VertexBackend(Backend):
         model = GenerativeModel(model_id)
     
         vertex_req = convert_chat_request(payload)
-        response = await model.generate_content_async(**dict(vertex_req))
+        try:
+            response = await model.generate_content_async(**dict(vertex_req))
+        except core_exceptions.InvalidArgument as e:
+            raise InvalidInput(str(e), original_exception=e)
         
         return convert_chat_vertex_response(response, model=model_id)
   
