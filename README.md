@@ -3,6 +3,52 @@ This is a FastApi application that will be able to wrap different inference back
 
 The standard interface for chat is the OpenAI Chat Completion API. 
 
+```mermaid
+flowchart TB
+    %% Main database and server
+    database[(PostgreSQL)]
+    fastapi[FastAPI Server]
+
+    %% Main modules
+    subgraph auth_module[Auth Module]
+        auth_repo[Auth Repositories]
+        auth_schemas[Auth Schemas]
+        auth_utils[Auth Utils]
+    end
+
+    subgraph users_module[Users Module]
+        users_repo[User Repositories]
+        users_schemas[User Schemas]
+    end
+
+    subgraph models_module[Model Providers]
+        google_provider[Google AI]
+        vertex_provider[Vertex AI]
+        aws_provider[AWS]
+    end
+
+    subgraph api_endpoints[API Endpoints]
+        inference_endpoints[Inference API]
+        embedding_endpoints[Embedding API]
+        admin_endpoints[Admin API]
+    end
+
+    %% External clients
+    client_apps[Client Applications]
+
+    %% Connections
+    database --> fastapi
+    auth_module --> fastapi
+    users_module --> fastapi
+    fastapi --> api_endpoints
+    api_endpoints --> models_module
+    auth_module --> users_module
+    auth_utils --> database
+    
+    client_apps -.-> |Authentication| auth_module
+    client_apps -.-> |API Requests| api_endpoints
+```
+
 ## Running Dev:
 
 Keep uv up-to-date:
