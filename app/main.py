@@ -72,6 +72,7 @@ async def json_500_handler(request: Request, exc: Exception):
 
 app.include_router(
     root.router,
+    include_in_schema=False,
     prefix=""
 )
 
