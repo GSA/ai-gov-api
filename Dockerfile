@@ -22,8 +22,9 @@ RUN groupadd --system appuser && useradd --system --gid appuser appuser
 # Bring in the dependencies.
 COPY --chown=appuser:appuser --from=builder /opt/venv /opt/venv
 # Copy app code from the builder stage.
+# We are pulling in everything not in dockerignore to 
+# give us easier access to alembic and script
 COPY --chown=appuser:appuser --from=builder /opt/project/ ./
-#COPY --chown=appuser:appuser --from=builder /opt/project/alembic ./alembic
 
 
 USER appuser
