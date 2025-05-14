@@ -7,6 +7,7 @@ from app.db.models import Base
 settings = get_settings()
 
 database_url = settings.postgres_connection
+
 engine = create_async_engine(database_url, echo=settings.database_echo)
 
 async def init_db() -> None:
