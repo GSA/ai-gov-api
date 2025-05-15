@@ -37,7 +37,7 @@ async def valid_api_key(
                 detail="API key is expired"
             ) 
 
-    return api_key
+    return APIKeyOut.model_validate(api_key)
         
 
 class RequiresScope:

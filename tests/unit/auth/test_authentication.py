@@ -9,6 +9,7 @@ from fastapi import HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials
 from app.auth.dependencies import valid_api_key
 from app.auth.schemas import APIKeyOut
+from app.auth.models import APIKey
 
 
 
@@ -25,10 +26,11 @@ def api_key() -> HTTPAuthorizationCredentials:
 @pytest.fixture(scope="module") 
 def good_api_key():
     now = datetime.now()
-    return APIKeyOut(
+    return APIKey(
         id=1,
         hashed_key="xyzabc",
         key_prefix="testing",
+        scopes=[],
         manager_id=uuid.uuid4(),
         is_active=True,
         created_at=now,
@@ -113,7 +115,7 @@ async def test_get_api_key_valid_key(mocker, good_api_key, api_key):
 
     returned_key = await valid_api_key(credentials=api_key, session=mock_session)
 
-    assert returned_key == good_api_key
+    assert returned_key == APIKeyOut.model_validate(good_api_key)
     assert returned_key.is_active is True
 
 

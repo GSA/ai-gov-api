@@ -14,8 +14,11 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     pass
 
-class UserUpdate(UserBase):
-    pass
+class UserUpdate(BaseModel):
+    name: str | None = None
+    email: EmailStr | None = None
+    role: Role | None = None
+    is_active: bool | None = None
 
 class UserOut(UserBase):
     id: UUID4 
