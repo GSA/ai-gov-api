@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+.git/
+.github/
+.vscode/
+*.db
+*.sqlite3
+.pytest_cache
+.ruff_cache
+Example_Notebook/

@@ -1,0 +1,41 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: gsai-container
+    env_file:
+      - .env
+    ports:
+      - 8000:8000
+    environment:
+      POSTGRES_CONNECTION: "postgresql+psycopg://postgres:postgres@db:5432/"
+      PORT: 8000
+
+    depends_on:
+      - db
+    networks:
+      backend:
+        aliases:
+          - app
+
+  db:
+    image: pgvector/pgvector:pg15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres # pragma: allowlist secret
+      POSTGRES_DB: postgres
+    ports: 
+    - 5432:5432
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      backend:
+        aliases:
+          - db
+
+networks:
+  backend: {}
+
+volumes:
+  db-data:
