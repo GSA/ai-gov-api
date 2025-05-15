@@ -16,6 +16,7 @@ class UserRepository:
             raise DuplicateResourceError(resource_name="User", identifier=new_user.email)
         
         self.session.add(new_user)
+        await self.session.flush([new_user])
         return new_user        
 
     async def get(self, user_id: str) -> User | None:
