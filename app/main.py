@@ -8,12 +8,11 @@ import logging
 from app.logs.logging_config import setup_structlog
 from app.logs.middleware import StructlogMiddleware
 from app.logs.logging_context import request_id_ctx
-from app.routers import api_v1, auth
+from app.routers import api_v1, auth, root
 from app.common.exceptions import ResourceNotFoundError, DuplicateResourceError
 from app.db.session import engine
 from app.services.billing import billing_worker, drain_billing_queue
 from sqlalchemy.exc import IntegrityError
-
 
 # this is only here until we actually use the users model
 # somewhere other than a relationship. SqlAlchemy has trouble
@@ -99,6 +98,11 @@ async def json_500_handler(request: Request, exc: Exception):
         }
     )
 
+app.include_router(
+    root.router,
+    include_in_schema=False,
+    prefix=""
+)
 
 app.include_router(
     api_v1.router,
