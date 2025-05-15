@@ -20,11 +20,12 @@ from typing import  Literal
 
 import aioboto3
 from aiobotocore.config import AioConfig
+import botocore.exceptions
 
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-
+from app.providers.exceptions import InvalidInput
 from app.providers.base import Backend, LLMModel
 from .adapter_from_core import core_to_bedrock, core_embed_request_to_bedrock
 from .adapter_to_core import bedrock_chat_response_to_core, bedorock_embed_reposonse_to_core
@@ -32,6 +33,7 @@ from ..core.chat_schema import ChatRequest, ChatRepsonse
 from ..core.embed_schema import EmbeddingResponse, EmbeddingRequest
 from .converse_schemas import ConverseResponse
 from .cohere_embedding_schemas import CohereRepsonse
+
 
 log = structlog.get_logger()
 
@@ -122,7 +124,11 @@ class BedRockBackend(Backend):
             arn = getattr(self.settings.bedrock_models, converted.model_id).arn
             
             body['modelId'] = arn
-            response = await client.converse(**body)
+            try:
+                response = await client.converse(**body)
+            except botocore.exceptions.ClientError as e:
+                raise InvalidInput(str(e), original_exception=e)
+            
             log.info("bedrock metrics", model=converted.model_id, **response['metrics'])
         
             res = ConverseResponse(**response)

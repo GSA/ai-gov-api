@@ -4,10 +4,12 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 import structlog
 
 import vertexai
+from google.api_core import exceptions as core_exceptions
 from vertexai.generative_models import GenerativeModel
 from vertexai.language_models import TextEmbeddingModel, TextEmbedding
 from ..core.embed_schema import EmbeddingRequest
 
+from app.providers.exceptions import InvalidInput
 from app.providers.base import Backend, LLMModel
 from ..core.chat_schema import ChatRequest, ChatRepsonse
 from .adapter_from_core import convert_chat_request, convert_embedding_request
@@ -30,6 +32,16 @@ class VertexModelsSettings(BaseSettings):
     gemini_2_0_flash:VertexModel = VertexModel(
         name="Gemini 2.0 Flash",
         id="gemini-2.0-flash",
+        capability="chat"
+    )
+    gemini_2_0_flash_light:VertexModel = VertexModel(
+        name="Gemini 2.0 Flash Light",
+        id="gemini-2.0-flash-lite",
+        capability="chat"
+    )
+    gemini_2_5_pro:VertexModel = VertexModel(
+        name="Gemini 2.5 Pro",
+        id="gemini-2.5-pro-preview-05-06",
         capability="chat"
     )
     text_embedding_005:VertexModel = VertexModel(
@@ -59,7 +71,10 @@ class VertexBackend(Backend):
         model = GenerativeModel(model_id)
     
         vertex_req = convert_chat_request(payload)
-        response = await model.generate_content_async(**dict(vertex_req))
+        try:
+            response = await model.generate_content_async(**dict(vertex_req))
+        except core_exceptions.InvalidArgument as e:
+            raise InvalidInput(str(e), original_exception=e)
         
         return convert_chat_vertex_response(response, model=model_id)
   
