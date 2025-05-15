@@ -111,5 +111,6 @@ app.include_router(
 
 app.include_router(
     auth.router,
-    prefix="/users"
+    prefix="/users",
+    include_in_schema=False
 )

@@ -16,7 +16,7 @@ except ImportError as e:
           "use `uv run` (see Readme)")
     sys.exit(1)
 
-SCOPES = [Scope.MODELS_INFERENCE, Scope.MODELS_EMBEDDING]
+SCOPES = [Scope.MODELS_INFERENCE, Scope.MODELS_EMBEDDING, Scope.ADMIN]
 KEY_PREFIX = "test_adm"
 
 async def create_admin_user(email: str, name: str, key_length: int):
