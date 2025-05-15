@@ -36,10 +36,8 @@ async def valid_api_key(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="API key is expired"
             ) 
-    print("orm key:", api_key.manager)
-    key = APIKeyOut.model_validate(api_key)
-    print("Key:", key)
-    return key
+
+    return APIKeyOut.model_validate(api_key)
         
 
 class RequiresScope:
