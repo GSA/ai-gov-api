@@ -5,7 +5,7 @@ from app.auth.dependencies import RequiresScope, valid_api_key
 from app.auth.schemas import Scope
 from app.providers.base import LLMModel
 from app.providers.dependencies import Backend
-from app.providers.exceptions import InputDataError
+from app.providers.exceptions import InvalidInput
 from app.config.settings import get_settings
 from app.providers.open_ai.schemas import ChatCompletionRequest, ChatCompletionResponse, EmbeddingRequest, EmbeddingResponse
 from app.providers.open_ai.adapter_to_core import openai_chat_request_to_core, openai_embed_request_to_core
@@ -31,7 +31,7 @@ async def converse(
         core_req = openai_chat_request_to_core(req)
         resp = await backend.invoke_model(core_req)
         return core_chat_response_to_openai(resp)
-    except InputDataError as e:
+    except InvalidInput as e:
         error_detail = {"error": "Bad Request", "message": str(e)}
         if e.field_name:
             error_detail["field"] = e.field_name
