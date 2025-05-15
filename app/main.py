@@ -8,10 +8,11 @@ import logging
 from app.logs.logging_config import setup_structlog
 from app.logs.middleware import StructlogMiddleware
 from app.logs.logging_context import request_id_ctx
-from app.routers import api_v1
-
+from app.routers import api_v1, auth
+from app.common.exceptions import ResourceNotFoundError, DuplicateResourceError
 from app.db.session import engine
 from app.services.billing import billing_worker, drain_billing_queue
+from sqlalchemy.exc import IntegrityError
 
 
 # this is only here until we actually use the users model
@@ -54,6 +55,33 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.exception_handler(ResourceNotFoundError)
+async def resource_not_found_exception_handler(request: Request, exc: ResourceNotFoundError):
+    return JSONResponse(
+        status_code=404,
+        content={"detail": str(exc)},
+    )
+
+@app.exception_handler(DuplicateResourceError)
+async def duplicate_resource_exception_handler(request: Request, exc: ResourceNotFoundError):
+    return JSONResponse(
+        status_code=409,
+        content={"detail": str(exc)},
+    )
+
+@app.exception_handler(IntegrityError)
+async def db_integrity_exception_handler(request: Request, exc: IntegrityError):
+    '''
+    This is a little hacky. SqlAlchemy's integrity error covers many cases
+    Null contrainst, unique contraints, etc and delviers a detailed message
+    we probably don't want to return to the user. TODO: revist.
+    '''
+    message_lines = exc._message().split('\n')
+    return JSONResponse(
+        status_code=400, 
+        content={"detail": message_lines[0]},
+    )
+
 @app.exception_handler(Exception)
 async def json_500_handler(request: Request, exc: Exception):
     """
@@ -75,4 +103,9 @@ async def json_500_handler(request: Request, exc: Exception):
 app.include_router(
     api_v1.router,
     prefix="/api/v1"
+)
+
+app.include_router(
+    auth.router,
+    prefix="/users"
 )
