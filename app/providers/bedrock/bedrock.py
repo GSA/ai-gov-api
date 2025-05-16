@@ -17,7 +17,7 @@ It has three part:
 
 import structlog
 from typing import  Literal
-
+from uuid import uuid4
 import aioboto3
 from aiobotocore.config import AioConfig
 import botocore.exceptions
@@ -28,10 +28,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from app.providers.exceptions import InvalidInput
 from app.providers.base import Backend, LLMModel
 from .adapter_from_core import core_to_bedrock, core_embed_request_to_bedrock
-from .adapter_to_core import bedrock_chat_response_to_core, bedorock_embed_reposonse_to_core
+from .adapter_to_core import bedrock_chat_response_to_core, bedorock_embed_reposonse_to_core, bedrock_chat_stream_response_to_core
 from ..core.chat_schema import ChatRequest, ChatRepsonse
 from ..core.embed_schema import EmbeddingResponse, EmbeddingRequest
-from .converse_schemas import ConverseResponse
+from .converse_schemas import ConverseResponse, ConverseStreamChunk
 from .cohere_embedding_schemas import CohereRepsonse
 
 
@@ -160,3 +160,36 @@ class BedRockBackend(Backend):
             resp = CohereRepsonse.model_validate_json(resp)
 
             return bedorock_embed_reposonse_to_core(model=modelId, resp=resp, token_count=token_count)
+
+
+    async def event_generator(self, payload: ChatRequest):
+        print("event generator started")
+        converted = core_to_bedrock(payload)
+        arn = getattr(self.settings.bedrock_models, converted.model_id).arn
+        body = converted.model_dump(exclude_none=True, by_alias=True)
+        body['modelId'] = arn
+        stream_id = uuid4()
+
+        session = aioboto3.Session()
+        try:
+            async with session.client("bedrock-runtime") as client:
+                print('in session')
+
+                resp = await client.converse_stream(**body)
+                print("converse response:", resp)
+
+                async for event in resp["stream"]:
+                    print(event)
+                    event = ConverseStreamChunk.model_validate(event)
+                    print(event.root)
+                    for chunk_json in bedrock_chat_stream_response_to_core(event, model=converted.model_id, id=str(stream_id)):                        
+                        yield f"data: {chunk_json.model_dump_json(exclude_none=True)}\n\n"
+        except botocore.exceptions.ClientError as e:
+            print("exception: ", e)
+            # Convert AWS exceptions into a proper SSE error frame _or_ abort
+            # in the route
+            raise InvalidInput(str(e), original_exception=e)
+        except Exception as e:
+            print("exception: ", e)
+        # in route
+        yield "data: [DONE]\n\n"

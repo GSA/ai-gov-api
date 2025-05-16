@@ -79,7 +79,8 @@ class ConverseResponseUsage(BaseModel):
     model_config = ConfigDict(
         # Allows parsing input with either 'inference_config' or 'inferenceConfig'
         populate_by_name=True,
-        alias_generator=to_camel
+        alias_generator=to_camel,
+        extra="ignore"
     )
     input_tokens: NonNegativeInt
     output_tokens: NonNegativeInt
@@ -99,7 +100,6 @@ class ConverseResponse(BaseModel):
 
 class MessageStartContent(BaseModel):
     role: Literal["assistant"] # This will alway be "assistant" for responses
-
 
 ## Stubbing for later tool use
 class ToolSpec(BaseModel):
@@ -147,10 +147,15 @@ class MessageStopContent(BaseModel):
     additional_model_response_fields: Optional[Dict[str, Any]] = Field(
         default=None, alias="additionalModelResponseFields"
     )
-  
+
+
 class Metrics(BaseModel):
     latency_ms: Optional[int] = Field(default=None, alias="latencyMs")
 
+class MetaDataContent(BaseModel):
+    usage: ConverseResponseUsage
+    metrics: Metrics
+  
 # --- Top-Level Event Models ---
 
 class MessageStartEvent(BaseModel):
@@ -169,8 +174,7 @@ class MessageStopEvent(BaseModel):
     message_stop: MessageStopContent = Field(alias="messageStop")
 
 class MetadataEvent(BaseModel):
-    usage: ConverseResponseUsage
-    metrics: Metrics
+    metadata: MetaDataContent
 
 
 # --- Error Models (Example) ---
