@@ -1,6 +1,6 @@
 from datetime import datetime
 from functools import singledispatch
-from typing import Union, Iterator
+from typing import Union, Iterator, AsyncGenerator, Any
 import structlog
 
 from ..core.chat_schema import ChatRepsonse, CompletionUsage, Response, StreamResponse, StreamResponseChoice, StreamResponseDelta
@@ -89,21 +89,24 @@ def _(part: MetadataEvent) -> Iterator[RespPiece]:
             total_tokens=part.metadata.usage.total_tokens,
     )
 
-def bedrock_chat_stream_response_to_core(resp: ConverseStreamChunk, model:str, id:str) -> Iterator[StreamResponse | CompletionUsage]:
+async def bedrock_chat_stream_response_to_core(bedrockStream, model:str, id:str) -> AsyncGenerator[StreamResponse, Any]: 
     usage = None
-    for event in _event_to_oai(resp.root):
-        if isinstance(event, CompletionUsage): 
-            # A bedrock usage event does not necessarily come last
-            # buffer the usage and send it after MessageStop
-            usage = event
-        else:
-            yield StreamResponse(
-                id=id,
-                object="chat.completion.chunk",
-                model=model,
-                created=datetime.now(),
-                choices=[event],
-            )
+    async for stream_event in bedrockStream:
+        resp = ConverseStreamChunk.model_validate(stream_event)
+        
+        for event in _event_to_oai(resp.root):
+            if isinstance(event, CompletionUsage): 
+                # A bedrock usage event does not necessarily come last
+                # buffer the usage and send it after MessageStop
+                usage = event
+            else:
+                yield StreamResponse(
+                    id=id,
+                    object="chat.completion.chunk",
+                    model=model,
+                    created=datetime.now(),
+                    choices=[event],
+                )
     if usage is not None:
         yield StreamResponse(
             id=id,
@@ -112,4 +115,4 @@ def bedrock_chat_stream_response_to_core(resp: ConverseStreamChunk, model:str, i
             created=datetime.now(),
             choices=[],
             usage=usage
-        )
+            )

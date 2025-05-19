@@ -306,7 +306,7 @@ class EmbeddingResponse(BaseModel):
 class StreamResponseDelta(BaseModel):
     content: Optional[str] = None
     refusal: Optional[str] = None
-    role: str
+    role: Optional[str] = None
 
 class StreamResponseChoice(BaseModel):
     delta: StreamResponseDelta
@@ -320,7 +320,7 @@ class StreamResponse(BaseModel):
     object: Literal["chat.completion.chunk"] = "chat.completion.chunk"
     service_tier: Optional[str] = None
     system_fingerprint: str
-    usage: ChatCompletionUsage
+    usage: Optional[ChatCompletionUsage] = None
 
     @field_serializer('created')
     def serialize_dt(self, created: datetime, _info):
