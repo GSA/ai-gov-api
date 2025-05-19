@@ -173,7 +173,7 @@ class BedRockBackend(Backend):
             arn = getattr(self.settings.bedrock_models, converted.model_id).arn
             body = converted.model_dump(exclude_none=True, by_alias=True)
             body['modelId'] = arn
-            stream_id = uuid4()
+            stream_id = f"chatcmpl-{uuid4()}"
 
             session = aioboto3.Session()
             async with session.client("bedrock-runtime") as client:
