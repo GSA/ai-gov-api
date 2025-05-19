@@ -1,6 +1,7 @@
-from typing import List
+from typing import List, Any
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import StreamingResponse, Response
+from fastapi.responses import StreamingResponse
+
 import structlog
 
 from app.auth.dependencies import RequiresScope, valid_api_key
@@ -34,7 +35,7 @@ async def converse(
     req: ChatCompletionRequest, 
     api_key=Depends(RequiresScope([Scope.MODELS_INFERENCE])),
     backend=Depends(Backend('chat'))
-) -> Response:
+) -> Any:
     core_req = openai_chat_request_to_core(req)
 
     if req.stream:
@@ -50,7 +51,7 @@ async def converse(
     else:
         try:
             resp = await backend.invoke_model(core_req)
-            return Response(core_chat_response_to_openai(resp))
+            return core_chat_response_to_openai(resp)
         except InvalidInput as e:
             error_detail = {"error": "Bad Request", "message": str(e)}
             if e.field_name:
