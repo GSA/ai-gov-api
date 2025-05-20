@@ -33,7 +33,6 @@ class Settings(BaseSettings):
     database_echo: bool = False
     google_application_credentials: str = Field(default=...)
     
-    bedrock_assume_role:str = Field(default=...)
     aws_default_region:str = Field(default=...)
 
     backend_map:dict[str,tuple[Backend, LLMModel]]
