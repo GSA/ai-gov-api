@@ -16,7 +16,7 @@ except ImportError as e:
           "use `uv run` (see Readme)")
     sys.exit(1)
 
-SCOPES = [Scope.MODELS_INFERENCE, Scope.MODELS_EMBEDDING]
+SCOPES = [Scope.MODELS_INFERENCE, Scope.MODELS_EMBEDDING, Scope.ADMIN]
 KEY_PREFIX = "test_adm"
 
 async def create_admin_user(email: str, name: str, key_length: int):
@@ -25,50 +25,52 @@ async def create_admin_user(email: str, name: str, key_length: int):
     """
 
     secret_key, key_hash = generate_api_key(KEY_PREFIX, key_length)
+    async with async_session() as session:
+        try:
+            async with session.begin():
+                user_repo = UserRepository(session)
+                existing_user = await user_repo.get_by_email(email)
+                if existing_user:
+                    raise ValueError(f"User with email '{email}' already exists.")
 
-    try:
-        # Create the user schema
-        user_schema = UserCreate(
-            email=email,
-            name=name,
-            role=Role.ADMIN, 
-        )
+                user_schema = UserCreate(
+                    email=email,
+                    name=name,
+                    role=Role.ADMIN, 
+                )
+                created_user_orm = await user_repo.create(user_schema)
+                if not created_user_orm.id:
+                    await session.flush([created_user_orm])
 
-        async with async_session() as session:
-            user_repo = UserRepository(session)
-            existing_user = await user_repo.get_by_email(email)
-            if existing_user:
-                print(f"Error: User with email '{email}' already exists.")
-                return 
+                api_key_schema = APIKeyCreate(
+                    hashed_key=key_hash,
+                    key_prefix=KEY_PREFIX,
+                    manager_id=created_user_orm.id,
+                    scopes=SCOPES
+                )
+                await APIKeyRepository(session).create(api_key_schema)
+            await session.refresh(created_user_orm)
 
-            new_user = await user_repo.create(user_schema)
+            print("\n" + "=" * 50)
+            print("  ADMIN USER AND API KEY CREATED SUCCESSFULLY!")
+            print("  Email:", created_user_orm.email)
+            print("  Name:", created_user_orm.name)
+            print("  User ID:", created_user_orm.id)
+            print("\n  IMPORTANT: Save the following API key. It cannot be recovered.")
+            print(f"  API Key: {secret_key}")
+            print("=" * 50 + "\n")
 
-        async with async_session() as session:
-            api_key_schema = APIKeyCreate(
-                hashed_key=key_hash,
-                key_prefix=KEY_PREFIX,
-                manager_id=new_user.id,
-                scopes=SCOPES
-            )
-            await APIKeyRepository(session).create(api_key_schema)
-
-
-        print("\n" + "=" * 50)
-        print("  ADMIN USER AND API KEY CREATED SUCCESSFULLY!")
-        print("  Email:", new_user.email)
-        print("  Name:", new_user.name)
-        print("  User ID:", new_user.id)
-        print("\n  IMPORTANT: Save the following API key. It cannot be recovered.")
-        print(f"  API Key: {secret_key}")
-        print("=" * 50 + "\n")
-
-    except Exception as e:
-        print(f"\nError during admin user creation: {e}")
-        sys.exit(1)
+        except ValueError as ve: # 
+            print(f"\nError: {ve}")
+            sys.exit(1)
+        except Exception as e:
+            print(f"\nError during admin user creation: {e}")
+            import traceback
+            traceback.print_exc()
+            sys.exit(1)
 
 
 def main():
-  
     parser = argparse.ArgumentParser(
         description="Create an admin user and their API key."
     )

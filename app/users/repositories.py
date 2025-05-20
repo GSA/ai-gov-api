@@ -2,34 +2,43 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.users.models import User
-from app.users.schemas import UserCreate, UserOut
+from app.users.schemas import UserCreate, UserUpdate
+from app.common.exceptions import ResourceNotFoundError, DuplicateResourceError
 
 class UserRepository:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
         
-    async def create(self,user:UserCreate) -> UserOut:
+    async def create(self,user:UserCreate) -> User:
         new_user = User(**user.model_dump())
-        async with self.session.begin():
-            self.session.add(new_user)           
-        await self.session.refresh(new_user)
-        return UserOut.model_validate(new_user)
+        existing_user = await self.get_by_email(new_user.email)
+        if existing_user is not None:
+            raise DuplicateResourceError(resource_name="User", identifier=new_user.email)
+        
+        self.session.add(new_user)
+        await self.session.flush([new_user])
+        return new_user        
 
-    async def get(self, user_id: str) -> UserOut | None:
-        async with self.session.begin():
-            result = await self.session.execute(
-                select(User).where(User.id==user_id)
-            )
-            result = result.scalars().first()
-            if result is not None:
-                return UserOut.model_validate(result)
+    async def get(self, user_id: str) -> User | None:
+        result = await self.session.execute(
+            select(User).where(User.id==user_id)
+        )
+        return result.scalars().one_or_none()
     
-    async def get_by_email(self, email: str) -> UserOut | None:
-        async with self.session.begin():
-            result = await self.session.execute(
-                select(User).where(User.email==email)
-            )
-            result = result.scalars().first()
+    async def get_by_email(self, email: str) -> User | None:
+        result = await self.session.execute(
+            select(User).where(User.email==email)
+        )
+        result = result.scalars().first()
+        return result
 
-            if result is not None:
-                return UserOut.model_validate(result)
+    async def update(self, email:str, user:UserUpdate) -> User:
+        to_update = await self.get_by_email(email)
+        if to_update is None:
+            raise ResourceNotFoundError(resource_name='User', identifier=email)
+
+        values = user.model_dump(exclude_unset=True)
+        for k, v in values.items():
+            setattr(to_update, k, v)
+
+        return to_update
