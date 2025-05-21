@@ -11,8 +11,13 @@ log = structlog.get_logger()
 router = APIRouter()
 
 
+@router.get("/")
+async def indexpage():
+    return {"status": True}
+
 @router.get("/health")
 async def healthcheck():
+    return {"status": True}
     async with async_session() as session:
         try:
             result = await session.execute(text('SELECT 1'))
