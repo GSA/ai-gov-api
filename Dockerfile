@@ -1,12 +1,12 @@
 # ---- Builder Stage ----
 # This is uv's official image: Python 3.11 and uv pre-installed.
-FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder
+FROM ghcr.io/astral-sh/uv:python3.11-bookworm-slim AS builder
 LABEL stage=builder
 
 WORKDIR /opt/project
 COPY pyproject.toml uv.lock* ./
 RUN uv --version
-RUN uv venv /opt/venv --python 3.12
+RUN uv venv /opt/venv --python 3.11
 
 RUN . /opt/venv/bin/activate && \
     uv sync --frozen --no-dev --no-cache --active
@@ -14,7 +14,7 @@ RUN . /opt/venv/bin/activate && \
 COPY . .
 
 # ---- Runtime Stage ----
-FROM python:3.12-slim-bookworm AS runtime
+FROM python:3.11-slim-bookworm AS runtime
 WORKDIR /opt/project
 
 RUN groupadd --system appuser && useradd --system --gid appuser appuser
