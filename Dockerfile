@@ -42,4 +42,4 @@ EXPOSE 8080
 # Command to run the application.
 # Uvicorn will be found via the PATH updated to include /opt/venv/bin.
 # Adjust `app.main:app` and `--workers` as needed.
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080", "--workers", "3"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080", "--workers", "3", "--forwarded-allow-ips", "*"]
