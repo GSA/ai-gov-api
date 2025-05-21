@@ -15,6 +15,7 @@ wheels/
 # Environment
 .env
 .env_local
+
 vertex_auth.json
 
 # notebook checkpoints

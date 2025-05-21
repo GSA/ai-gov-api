@@ -84,7 +84,6 @@ class BedrockModelsSettings(BaseSettings):
 class BedRockBackend(Backend):
     class Settings(BaseSettings):
         model_config = SettingsConfigDict(env_file='.env',extra='ignore', env_file_encoding='utf-8', env_nested_delimiter="__" )
-        bedrock_assume_role: str = Field(default=...)
         aws_default_region: str = Field(default=...)
         bedrock_models: BedrockModelsSettings = BedrockModelsSettings()
         

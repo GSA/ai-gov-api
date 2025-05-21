@@ -1,3 +1,4 @@
+import os
 from functools import lru_cache
 from typing import List
 from pydantic import Field
@@ -21,18 +22,35 @@ for backend in backend_instances:
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file='.env', extra="ignore", env_file_encoding='utf-8', env_nested_delimiter="__" )
     env:str = Field(default=...)
-    log_level: str = Field(default=...)
+    log_level:str = Field(default=...)
 
-    postgres_connection: str = Field(default=...)
-    database_echo: bool = False
+    db_user:str =  Field(default=...)
+    db_pass:str =  Field(default=...)
+    db_endpoint:str =  Field(default=...)
+    db_name:str =  Field(default=...)
+    db_port:str =  Field(default=...)
     
-    bedrock_assume_role: str = Field(default=...)
-    aws_default_region: str = Field(default=...)
+    database_echo: bool = False
+    google_application_credentials: str = Field(default=...)
+    
+    aws_default_region:str = Field(default=...)
 
     backend_map:dict[str,tuple[Backend, LLMModel]]
+
+    @property
+    def postgres_connection(self) -> str:
+        return (
+            f"postgresql+psycopg://{self.db_user}:{self.db_pass}"
+            f"@{self.db_endpoint}:{self.db_port}/{self.db_name}"
+        )
+
 
 
 @lru_cache()
 def get_settings() -> Settings:
-    return Settings(backend_map=_backend_map)
+    settings = Settings(backend_map=_backend_map)
+    if "GOOGLE_APPLICATION_CREDENTIALS" not in os.environ:
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = settings.google_application_credentials
+
+    return settings
 
