@@ -11,6 +11,11 @@ log = structlog.get_logger()
 router = APIRouter()
 
 
+@router.get("/")
+async def indexpage():
+    return {"status": True}
+
+
 @router.get("/health")
 async def healthcheck():
     async with async_session() as session:
