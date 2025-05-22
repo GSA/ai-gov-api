@@ -94,7 +94,7 @@ class VertexBackend(Backend):
         vertex_req = convert_chat_request(payload)
 
         try:
-            vertex_stream = await model.generate_content_async(**dict(vertex_req))
+            vertex_stream= await model.generate_content_async(**dict(vertex_req))
             async for vertex_response in vertex_stream_response_to_core(vertex_stream, model_id=model_id):
                 yield vertex_response
 

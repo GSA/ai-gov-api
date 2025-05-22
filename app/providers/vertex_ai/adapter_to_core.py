@@ -85,17 +85,18 @@ async def vertex_stream_response_to_core(vertex_stream, model_id) ->  AsyncGener
 
                 sent_role_for_candidate_idx.add(candidate_idx)
 
-            # A content chunk
+            # A content chunk(s)
             if has_content:
-                text_chunk = candidate.content.parts[0].text
-                content_delta = StreamResponseDelta(content=text_chunk)
-                choice = StreamResponseChoice(index=candidate_idx, delta=content_delta, finish_reason=None)
-                yield StreamResponse(
-                    id=stream_id,
-                    created=created_timestamp,
-                    model=model_id,
-                    choices=[choice],
-                )
+                for part in candidate.content.parts:
+                    if hasattr(part, 'text') and part.text:
+                        content_delta = StreamResponseDelta(content=part.text)
+                        choice = StreamResponseChoice(index=candidate_idx, delta=content_delta, finish_reason=None)
+                        yield StreamResponse(
+                            id=stream_id,
+                            created=created_timestamp,
+                            model=model_id,
+                            choices=[choice],
+                        )
             
             # A finish reason chunk
             if candidate.finish_reason:
@@ -114,12 +115,3 @@ async def vertex_stream_response_to_core(vertex_stream, model_id) ->  AsyncGener
                     model=model_id,
                     choices=[choice],
                 )
-
-        # Note: Vertex AI's usage_metadata (prompt_tokens, completion_tokens, total_tokens)
-        # is typically fully populated only in the *final* GenerationResponse of the stream.
-        # OpenAI streaming chunks do not include usage. If you need to provide total usage
-        # at the end, you'd have to consume this generator fully and then potentially
-        # inspect the last item from `vertex_stream` (if you saved it) or have another
-        # mechanism to report it. For this SSE stream, usage is not included per chunk.
-
-    #yield "data: [DONE]\n\n"
