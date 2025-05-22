@@ -62,6 +62,18 @@ class BedrockModelsSettings(BaseSettings):
         capability="chat",
         arn="",                         
     )
+    claude_3_7_sonnet: BedrockModel = BedrockModel(
+        name="Claude 3.7 Sonnet",
+        id="claude_3_7_sonnet",
+        capability="chat",
+        arn="",                         
+    )
+    claude_3_haiku: BedrockModel = BedrockModel(
+        name="Claude 3 Haiku",
+        id="claude_3_haiku",
+        capability="chat",
+        arn="",                         
+    )
     llama3211b: BedrockModel = BedrockModel(
         name="Llama 3.2 11B",
         id="llama3211b",
